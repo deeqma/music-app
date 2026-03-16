@@ -1,0 +1,22 @@
+[
+  {
+    "playlistName": "Rock",
+    "description": "Classic and modern rock anthems that defined generations. From hard-hitting riffs to unforgettable solos."
+  },
+  {
+    "playlistName": "Blues",
+    "description": "Deep, soulful blues from the legends. Raw emotion and storytelling through guitar and voice."
+  },
+  {
+    "playlistName": "Funky",
+    "description": "Groove-heavy tracks that make it impossible to sit still. Bass lines, rhythm, and pure funk energy."
+  },
+  {
+    "playlistName": "Hard Rock",
+    "description": "High voltage, high energy. The heaviest and loudest rock tracks for when you need to turn it up."
+  },
+  {
+    "playlistName": "Soul",
+    "description": "Timeless soul and R&B classics. Smooth, emotional and deeply human music that hits different."
+  }
+]
