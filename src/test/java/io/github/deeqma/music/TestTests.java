@@ -1,4 +1,4 @@
-package Rift.Radio;
+package io.github.deeqma.music;
 
 import org.junit.jupiter.api.Test;
 

@@ -1,4 +1,4 @@
-package Rift.Radio;
+package io.github.deeqma.music;
 
 import io.github.deeqma.music.model.Song;
 import org.junit.jupiter.api.BeforeAll;

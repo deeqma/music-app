@@ -4,7 +4,7 @@ package io.github.deeqma.music.service;
 import io.github.deeqma.music.error.SongException;
 import io.github.deeqma.music.model.Song;
 import io.github.deeqma.music.repository.SongRepository;
-import Rift.Radio.Tests;
+import io.github.deeqma.music.Tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.*;

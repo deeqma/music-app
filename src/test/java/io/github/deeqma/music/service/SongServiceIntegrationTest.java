@@ -3,7 +3,7 @@ package io.github.deeqma.music.service;
 import io.github.deeqma.music.error.SongException;
 import io.github.deeqma.music.model.Song;
 import io.github.deeqma.music.repository.SongRepository;
-import Rift.Radio.Tests;
+import io.github.deeqma.music.Tests;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
