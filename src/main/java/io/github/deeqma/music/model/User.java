@@ -2,17 +2,15 @@ package io.github.deeqma.music.model;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import org.springframework.data.annotation.Id;
+import org.jspecify.annotations.Nullable;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
-public class User {
+public class User  implements UserDetails {
 
-    @jakarta.persistence.Id
-    private Long id1;
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -33,12 +31,38 @@ public class User {
 
     public User() {}
 
-    public Long getId1() {
-        return id1;
+    public UUID getId() {
+        return id;
     }
 
-    public void setId1(Long id1) {
-        this.id1 = id1;
+    public void setId(UUID id) {
+        this.id = id;
     }
 
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of();
+    }
+
+    @Override
+    public @Nullable String getPassword() {
+        return hashedPassword;
+    }
+
+    @Override
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getHashedPassword() {
+        return hashedPassword;
+    }
+
+    public void setHashedPassword(String hashedPassword) {
+        this.hashedPassword = hashedPassword;
+    }
 }
