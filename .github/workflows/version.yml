@@ -1,0 +1,34 @@
+name: Version
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Configure git identity
+        shell: bash
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+      - name: Create and push git tag
+        shell: bash
+        run: |
+          set -e
+          VERSION="v${{ inputs.version }}"
+          if git tag | grep -qF "$VERSION"; then
+            echo "Tag $VERSION already exists, skipping"
+            exit 0
+          fi
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"

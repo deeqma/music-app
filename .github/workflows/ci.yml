@@ -1,0 +1,49 @@
+name: CI
+on:
+  push:
+    branches: [ master ]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      should_tag: ${{ steps.meta.outputs.should_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - id: meta
+        shell: bash
+        run: |
+          set -e
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          TAG="v$VERSION"
+          if git tag | grep -qF "$TAG"; then
+            echo "should_tag=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_tag=true" >> $GITHUB_OUTPUT
+          fi
+  build:
+    needs: prepare
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+    secrets: inherit
+  version:
+    needs: [prepare, build]
+    if: needs.prepare.outputs.should_tag == 'true'
+    uses: ./.github/workflows/version.yml
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+    secrets: inherit
