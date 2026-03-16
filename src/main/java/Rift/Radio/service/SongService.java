@@ -4,7 +4,7 @@ import Rift.Radio.dto.CreateSongDto;
 import Rift.Radio.dto.SongDto;
 import Rift.Radio.error.ErrorType;
 import Rift.Radio.error.SongException;
-import Rift.Radio.modal.Song;
+import Rift.Radio.model.Song;
 import Rift.Radio.repository.SongRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -26,7 +26,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 
 @Service

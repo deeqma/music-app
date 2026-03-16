@@ -3,7 +3,6 @@ package Rift.Radio.controller;
 import Rift.Radio.api.SongController;
 import Rift.Radio.error.ErrorType;
 import Rift.Radio.error.SongException;
-import Rift.Radio.modal.Song;
 import Rift.Radio.service.SongService;
 import Rift.Radio.Tests;
 import jakarta.servlet.ServletOutputStream;

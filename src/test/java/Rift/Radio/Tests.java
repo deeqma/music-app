@@ -1,6 +1,6 @@
 package Rift.Radio;
 
-import Rift.Radio.modal.Song;
+import Rift.Radio.model.Song;
 import org.junit.jupiter.api.BeforeAll;
 
 public class Tests {

@@ -1,7 +1,5 @@
 package Rift.Radio.dto;
 
-import Rift.Radio.modal.LikedSong;
-
 public class SongDto {
 
     private Long id;

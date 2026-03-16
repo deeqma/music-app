@@ -1,6 +1,6 @@
 package Rift.Radio.repository;
 
-import Rift.Radio.modal.Song;
+import Rift.Radio.model.Song;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

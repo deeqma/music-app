@@ -1,7 +1,7 @@
 package Rift.Radio.api;
 
-import Rift.Radio.modal.LikedSong;
-import Rift.Radio.modal.Song;
+import Rift.Radio.model.LikedSong;
+import Rift.Radio.model.Song;
 import Rift.Radio.service.LikedSongService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

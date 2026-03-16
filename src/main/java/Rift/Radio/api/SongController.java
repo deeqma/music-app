@@ -3,7 +3,7 @@ package Rift.Radio.api;
 import Rift.Radio.dto.CreateSongDto;
 import Rift.Radio.dto.SongDto;
 import Rift.Radio.error.SongException;
-import Rift.Radio.modal.Song;
+import Rift.Radio.model.Song;
 import Rift.Radio.service.SongService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;

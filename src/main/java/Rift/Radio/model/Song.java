@@ -1,4 +1,4 @@
-package Rift.Radio.modal;
+package Rift.Radio.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;

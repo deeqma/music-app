@@ -1,8 +1,8 @@
 package Rift.Radio.service;
 
 import Rift.Radio.error.LikedException;
-import Rift.Radio.modal.LikedSong;
-import Rift.Radio.modal.Song;
+import Rift.Radio.model.LikedSong;
+import Rift.Radio.model.Song;
 import Rift.Radio.repository.LikedSongRepository;
 import Rift.Radio.repository.SongRepository;
 import org.junit.jupiter.api.BeforeEach;

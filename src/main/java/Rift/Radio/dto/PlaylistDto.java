@@ -1,7 +1,5 @@
 package Rift.Radio.dto;
 
-import Rift.Radio.modal.Song;
-
 import java.util.ArrayList;
 import java.util.List;
 

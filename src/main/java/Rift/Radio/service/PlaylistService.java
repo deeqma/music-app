@@ -5,17 +5,15 @@ import Rift.Radio.dto.PlaylistDto;
 import Rift.Radio.dto.SongDto;
 import Rift.Radio.error.ErrorType;
 import Rift.Radio.error.PlaylistException;
-import Rift.Radio.modal.Playlist;
-import Rift.Radio.modal.Song;
+import Rift.Radio.model.Playlist;
+import Rift.Radio.model.Song;
 import Rift.Radio.repository.PlaylistRepository;
 import Rift.Radio.repository.SongRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class PlaylistService {

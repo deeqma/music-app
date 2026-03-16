@@ -2,7 +2,7 @@ package Rift.Radio.service;
 
 
 import Rift.Radio.error.SongException;
-import Rift.Radio.modal.Song;
+import Rift.Radio.model.Song;
 import Rift.Radio.repository.SongRepository;
 import Rift.Radio.Tests;
 import static org.junit.jupiter.api.Assertions.assertEquals;
