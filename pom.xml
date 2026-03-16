@@ -10,7 +10,7 @@
 	</parent>
 	<packaging>jar</packaging>
 	<groupId>AWS</groupId>
-	<artifactId>RIFT.RADIO</artifactId>
+	<artifactId>music-app</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>RIFT.RADIO</name>
 	<description>Music Application</description>
