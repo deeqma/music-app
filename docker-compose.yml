@@ -2,58 +2,14 @@ version: '3.8'
 services:
   database:
     container_name: database
-    image: postgres:latest
+    image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: stykledb
+      POSTGRES_DB: music
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: pass
     ports:
       - "5432:5432"
-    volumes:
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./database/data:/data/stykledb
-
-
-  #clamav:
-   # image: clamav/clamav:latest
-   # container_name: clamav-anti-virus-detector
-    #ports:
-     # - "3310:3310"
-
-
-#  jenkins:
-#    container_name: jenkins
-#    image: jenkins/jenkins:jdk17
 #    volumes:
-#      - ./jenkins:/var/jenkins_home
-#      - ./webapps:/artifacts
-#    ports:
-#      - "8050:8080"
-#      - "50000:50000"
-#    restart: unless-stopped
-#  TomcatDeployment:
-#    container_name: backend
-#    image: tomcat:11.0.0-M1-jdk17
-#    volumes:
-#      - ./webapps:/usr/local/tomcat/webapps
-#      -  ./m2repo:/root/.m2/repository
-
-#    ports:
-#      - "8099:8080"
-#    restart: unless-stopped
-#
-#  pgadmin:
-#    container_name: pgadmin4_container
-#    image: dpage/pgadmin4
-#    restart: always
-#    environment:
-#      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-#      PGADMIN_DEFAULT_PASSWORD: root
-#    ports:
-#      - "3010:80"
-#volumes:
-#  m2repo:
-#    name: m2repo
-#  nodemodules:
-#    name: nodemodules
+#      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+#      - ./database/data:/var/lib/postgresql
