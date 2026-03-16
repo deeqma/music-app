@@ -1,7 +1,5 @@
 package io.github.deeqma.music.error;
 
-
-@SuppressWarnings("unused")
 public class SongException extends RuntimeException {
 
     private final ErrorType errorType;
@@ -20,4 +18,7 @@ public class SongException extends RuntimeException {
         this.errorType = errorType;
     }
 
+    public ErrorType getErrorType() {
+        return errorType;
+    }
 }

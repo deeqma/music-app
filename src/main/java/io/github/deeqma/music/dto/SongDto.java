@@ -18,6 +18,8 @@ public class SongDto {
 
     private boolean liked;
 
+    private int durationSeconds;
+
     public Long getId() {
         return id;
     }
@@ -60,6 +62,14 @@ public class SongDto {
 
     public int getReleaseYear() {
         return releaseYear;
+    }
+
+    public int getDurationSeconds() {
+        return durationSeconds;
+    }
+
+    public void setDurationSeconds(int durationSeconds) {
+        this.durationSeconds = durationSeconds;
     }
 
     public void setReleaseYear(int releaseYear) {

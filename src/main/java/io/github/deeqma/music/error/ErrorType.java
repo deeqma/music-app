@@ -2,7 +2,7 @@ package io.github.deeqma.music.error;
 
 public enum ErrorType {
 
-    Duplicated_SONG,
+    DUPLICATED_SONG,
     FILE_NOT_FOUND,
     SONG_NOT_FOUND,
     PLAYLIST_NOT_FOUND,
@@ -14,6 +14,10 @@ public enum ErrorType {
     FILE_STORAGE_ERROR,
     PLAYLIST_EMPTY,
     INVALID_DATE,
-    MP3_ALREADY_EXIST
+    MP3_ALREADY_EXIST,
+    NOT_FOUND,
+    TOKEN_GENERATION_FAILED,
+    ALREADY_EXISTS,
+    BAD_CREDENTIALS
 
 }
