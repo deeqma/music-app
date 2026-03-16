@@ -9,6 +9,7 @@ public interface SongRepository extends JpaRepository<Song, Long> {
     boolean existsBySongName(String songName);
     boolean existsByFilePath(String filePath);
 
+    boolean existsBySongNameAndArtistName(String songName, String artistName);
     boolean existsBySongNameAndIdNot(String songName, Long id);
 
 }
