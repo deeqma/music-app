@@ -1,9 +1,9 @@
 package Rift.Radio.controller;
 
-import Rift.Radio.api.SongController;
-import Rift.Radio.error.ErrorType;
-import Rift.Radio.error.SongException;
-import Rift.Radio.service.SongService;
+import io.github.deeqma.music.api.SongController;
+import io.github.deeqma.music.error.ErrorType;
+import io.github.deeqma.music.error.SongException;
+import io.github.deeqma.music.service.SongService;
 import Rift.Radio.Tests;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;

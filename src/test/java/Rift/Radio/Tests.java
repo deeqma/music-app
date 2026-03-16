@@ -1,6 +1,6 @@
 package Rift.Radio;
 
-import Rift.Radio.model.Song;
+import io.github.deeqma.music.model.Song;
 import org.junit.jupiter.api.BeforeAll;
 
 public class Tests {
