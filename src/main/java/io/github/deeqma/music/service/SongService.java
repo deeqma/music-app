@@ -43,8 +43,8 @@ public class SongService {
         validate(file, dto);
 
         try {
-            String filePath = saveFile(file);
             String fileHash = generateFileHash(file);
+            String filePath = saveFile(file);
 
             Song song = new Song();
             song.setSongName(dto.getSongName());

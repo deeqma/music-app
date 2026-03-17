@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.*;
 
 @Entity
+@Table(name = "users")
 public class User  implements UserDetails {
 
 

@@ -1,4 +1,4 @@
-package io.github.deeqma.music.api;
+package io.github.deeqma.music.api.auth;
 
 
 import io.github.deeqma.music.dto.auth.AuthResponse;

@@ -21,12 +21,22 @@ public class SongController {
     public SongController(SongService songService) {
         this.songService = songService;
     }
-
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SongDto> uploadSong(
             @RequestPart("file") MultipartFile file,
-            @RequestPart("data") @Valid CreateSongDto dto) {
+            @RequestParam("songName") String songName,
+            @RequestParam("artistName") String artistName,
+            @RequestParam(value = "album", required = false) String album,
+            @RequestParam(value = "genre", required = false) String genre,
+            @RequestParam("releaseYear") int releaseYear) {
+
+        CreateSongDto dto = new CreateSongDto();
+        dto.setSongName(songName);
+        dto.setArtistName(artistName);
+        dto.setAlbum(album);
+        dto.setGenre(genre);
+        dto.setReleaseYear(releaseYear);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(songService.uploadSong(file, dto));
     }
-
 }
