@@ -2,6 +2,9 @@ package io.github.deeqma.music.dto;
 
 import io.github.deeqma.music.model.PlaylistVisibility;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class PlaylistDto {
     private Long playlistId;
     private String playlistName;
@@ -9,6 +12,8 @@ public class PlaylistDto {
     private String slug;
     private PlaylistVisibility visibility;
     private int totalSongs;
+    private String shareToken;
+    private List<SongDto> songDtos = new ArrayList<>();
 
     public Long getPlaylistId() {
         return playlistId;
@@ -56,5 +61,21 @@ public class PlaylistDto {
 
     public void setTotalSongs(int totalSongs) {
         this.totalSongs = totalSongs;
+    }
+
+    public String getShareToken() {
+        return shareToken;
+    }
+
+    public void setShareToken(String shareToken) {
+        this.shareToken = shareToken;
+    }
+
+    public List<SongDto> getSongDtos() {
+        return songDtos;
+    }
+
+    public void setSongDtos(List<SongDto> songDtos) {
+        this.songDtos = songDtos;
     }
 }

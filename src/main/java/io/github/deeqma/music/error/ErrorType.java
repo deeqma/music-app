@@ -2,6 +2,8 @@ package io.github.deeqma.music.error;
 
 public enum ErrorType {
 
+    PLAYLIST_SHARE_NOT_ALLOWED,
+    PLAYLIST_SHARE_ALREADY_EXISTS,
     PLAYLIST_LIMIT_REACHED,
     USER_NOT_FOUND,
     DUPLICATED_SONG,
