@@ -1,5 +1,6 @@
 package io.github.deeqma.music;
 
+import io.github.deeqma.music.dto.SongDto;
 import io.github.deeqma.music.model.Song;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -80,6 +81,19 @@ public class SongTestData {
                 sharpDressedMan(),
                 enterSandman()
         );
+    }
+
+    public static SongDto highwayStarDto() {
+        SongDto dto = new SongDto();
+        dto.setId(1L);
+        dto.setSongName("Highway Star");
+        dto.setArtistName("Deep Purple");
+        dto.setAlbum("Machine Head");
+        dto.setGenre("Hard Rock");
+        dto.setReleaseYear(1972);
+        dto.setDurationSeconds(370);
+        dto.setFilePath("mock/highway-star.mp3");
+        return dto;
     }
 
     public static MockMultipartFile mockMp3File() {
