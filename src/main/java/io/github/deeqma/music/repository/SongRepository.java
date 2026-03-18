@@ -8,14 +8,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface SongRepository extends JpaRepository<Song, Long>, JpaSpecificationExecutor<Song> {
 
-    boolean existsBySongName(String songName);
-    boolean existsByFilePath(String filePath);
-
     boolean existsBySongNameAndArtistName(String songName, String artistName);
     boolean existsByFileHash(String fileHash);
-
-    boolean existsBySongNameAndIdNot(String songName, Long id);
-
     boolean existsBySongNameAndArtistNameAndIdNot(String songName, String artistName, Long id);
 
 }
