@@ -70,4 +70,10 @@ public class SongController {
         return ResponseEntity.ok(songService.filterSongs(filterDto, page, pageSize));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSong(@PathVariable Long id) {
+        songService.deleteSong(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

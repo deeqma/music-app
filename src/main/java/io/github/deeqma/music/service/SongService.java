@@ -14,6 +14,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -79,6 +83,25 @@ public class SongService {
             result.add(toDto(song));
         }
         return result;
+    }
+
+
+    public void deleteSong(Long id) {
+
+        log.info("deleteSong: deleting song ID {}", id);
+
+        Song song = findSongById(id);
+        String filePath = song.getFilePath();
+        songRepository.delete(song);
+
+        try {
+            Files.delete(Paths.get(filePath));
+            log.info("deleteSong: file '{}' deleted", filePath);
+        } catch (NoSuchFileException _) {
+            log.warn("deleteSong: file '{}' was already missing", filePath);
+        } catch (IOException _) {
+            log.warn("deleteSong: could not delete file '{}'", filePath);
+        }
     }
 
     public SongDto toDto(Song song) {
