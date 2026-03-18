@@ -1,12 +1,16 @@
 package io.github.deeqma.music.service;
 
+import io.github.deeqma.music.dto.CreateOrUpdateSongDto;
 import io.github.deeqma.music.dto.SongDto;
+import io.github.deeqma.music.error.ErrorType;
+import io.github.deeqma.music.error.SongException;
 import io.github.deeqma.music.model.Song;
 import io.github.deeqma.music.repository.SongRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +36,35 @@ public class SongService {
         return result;
     }
 
+    public SongDto updateSong(Long id, CreateOrUpdateSongDto dto) {
+
+        log.info("updateSong: updating song ID {}", id);
+
+        Song song = findSongById(id);
+
+        validateUpdate(id, dto);
+
+        if (StringUtils.hasText(dto.getSongName())) {
+            song.setSongName(dto.getSongName());
+        }
+        if (StringUtils.hasText(dto.getArtistName())) {
+            song.setArtistName(dto.getArtistName());
+        }
+        if (StringUtils.hasText(dto.getAlbum())) {
+            song.setAlbum(dto.getAlbum());
+        }
+        if (StringUtils.hasText(dto.getGenre())) {
+            song.setGenre(dto.getGenre());
+        }
+        if (dto.getReleaseYear() != 0) {
+            song.setReleaseYear(dto.getReleaseYear());
+        }
+
+        Song updated = songRepository.save(song);
+        log.info("updateSong: song ID {} updated", id);
+        return toDto(updated);
+    }
+
     public SongDto toDto(Song song) {
         SongDto dto = new SongDto();
         dto.setId(song.getId());
@@ -43,6 +76,18 @@ public class SongService {
         dto.setFilePath(song.getFilePath());
         dto.setDurationSeconds(song.getDurationSeconds());
         return dto;
+    }
+
+    private void validateUpdate(Long id, CreateOrUpdateSongDto dto) {
+        if (songRepository.existsBySongNameAndArtistNameAndIdNot(dto.getSongName(), dto.getArtistName(), id)) {
+            throw new SongException(ErrorType.DUPLICATED_SONG, "Song with this name and artist already exists");
+        }
+    }
+
+    private Song findSongById(Long id) {
+        return songRepository.findById(id).orElseThrow(
+                () -> new SongException(ErrorType.SONG_NOT_FOUND, "Song not found")
+        );
     }
 
 }

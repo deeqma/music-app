@@ -1,6 +1,6 @@
 package io.github.deeqma.music.service;
 
-import io.github.deeqma.music.dto.CreateSongDto;
+import io.github.deeqma.music.dto.CreateOrUpdateSongDto;
 import io.github.deeqma.music.dto.SongDto;
 import io.github.deeqma.music.error.ErrorType;
 import io.github.deeqma.music.error.SongException;
@@ -38,7 +38,7 @@ public class UploadSongService {
         this.songService = songService;
     }
 
-    public SongDto uploadSong(MultipartFile file, CreateSongDto dto) {
+    public SongDto uploadSong(MultipartFile file, CreateOrUpdateSongDto dto) {
 
         log.info("uploadSong: uploading '{}' by '{}'", dto.getSongName(), dto.getArtistName());
 
@@ -68,7 +68,7 @@ public class UploadSongService {
     }
 
 
-    private void validate(MultipartFile file, CreateSongDto dto) {
+    private void validate(MultipartFile file, CreateOrUpdateSongDto dto) {
 
         if (file.isEmpty()) {
             throw new SongException(ErrorType.FILE_NOT_FOUND, "File is empty");

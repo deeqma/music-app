@@ -14,5 +14,7 @@ public interface SongRepository extends JpaRepository<Song, Long> {
 
     boolean existsBySongNameAndIdNot(String songName, Long id);
 
+    boolean existsBySongNameAndArtistNameAndIdNot(String songName, String artistName, Long id);
+
 }
 

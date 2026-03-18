@@ -1,11 +1,11 @@
 package io.github.deeqma.music.api;
 
 
-import io.github.deeqma.music.dto.CreateSongDto;
+import io.github.deeqma.music.dto.CreateOrUpdateSongDto;
 import io.github.deeqma.music.dto.SongDto;
 import io.github.deeqma.music.service.SongService;
 import io.github.deeqma.music.service.UploadSongService;
-import jakarta.validation.constraints.Max;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,7 +37,7 @@ public class SongController {
             @RequestParam(value = "genre", required = false) String genre,
             @RequestParam("releaseYear") int releaseYear) {
 
-        CreateSongDto dto = new CreateSongDto();
+        CreateOrUpdateSongDto dto = new CreateOrUpdateSongDto();
         dto.setSongName(songName);
         dto.setArtistName(artistName);
         dto.setAlbum(album);
@@ -52,6 +52,13 @@ public class SongController {
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "15") @Min(1) int pageSize) {
         return ResponseEntity.ok(songService.getAllSongs(page, pageSize));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<SongDto> updateSong(
+            @PathVariable Long id,
+            @RequestBody @Valid CreateOrUpdateSongDto dto) {
+        return ResponseEntity.ok(songService.updateSong(id, dto));
     }
 
 }

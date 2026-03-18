@@ -3,7 +3,8 @@ package io.github.deeqma.music.dto;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-public class CreateSongDto {
+
+public class CreateOrUpdateSongDto {
 
     @NotBlank(message = "Song name is required")
     private String songName;
