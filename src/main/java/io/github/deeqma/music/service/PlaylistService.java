@@ -2,6 +2,7 @@ package io.github.deeqma.music.service;
 
 import io.github.deeqma.music.dto.CreateOrUpdatePlaylistDto;
 import io.github.deeqma.music.dto.PlaylistDto;
+import io.github.deeqma.music.dto.SongDto;
 import io.github.deeqma.music.dto.SongFilterDto;
 import io.github.deeqma.music.error.ErrorType;
 import io.github.deeqma.music.error.PlaylistException;
@@ -133,6 +134,34 @@ public class PlaylistService {
         Playlist saved = playlistRepository.save(playlist);
         log.info("generateShareToken: share token generated for playlist ID {}", playlistId);
         return toDto(saved);
+    }
+
+    public List<SongDto> searchSongsInPlaylist(Long playlistId, String query, String shareToken,
+                                               UUID userId, int page, int pageSize) {
+
+        log.info("searchSongsInPlaylist: searching in playlist ID {}", playlistId);
+
+        Playlist playlist = findPlaylistById(playlistId);
+
+        if (playlist.getVisibility() == PlaylistVisibility.PRIVATE) {
+            boolean hasShareToken = StringUtils.hasText(shareToken) && shareToken.equals(playlist.getShareToken());
+            if (!hasShareToken) {
+                validateOwnership(playlist, userId);
+            }
+        }
+
+        Set<Long> songIds = playlist.getSongs().stream()
+                .map(Song::getId)
+                .collect(Collectors.toSet());
+
+        Specification<Song> spec = SongSpecification.search(query)
+                .and((root, _, _) -> root.get("id").in(songIds));
+
+        List<Song> songs = songRepository.findAll(spec, PageRequest.of(page, pageSize)).getContent();
+        log.info("searchSongsInPlaylist: found {} songs in playlist ID {}", songs.size(), playlistId);
+
+        return songs.stream().map(songService::toDto).toList();
+
     }
 
     public PlaylistDto toggleVisibility(Long playlistId, boolean isPrivate, UUID userId) {

@@ -44,4 +44,17 @@ public class SongSpecification {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
+
+    public static Specification<Song> search(String query) {
+        return (root, _, cb) -> {
+            if (!StringUtils.hasText(query)) {
+                return cb.conjunction();
+            }
+            String pattern = "%" + query.toLowerCase() + "%";
+            return cb.or(
+                    cb.like(cb.lower(root.get("songName")), pattern),
+                    cb.like(cb.lower(root.get("artistName")), pattern)
+            );
+        };
+    }
 }

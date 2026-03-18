@@ -20,6 +20,7 @@ public class SongDto {
 
     private int durationSeconds;
 
+    
     public Long getId() {
         return id;
     }

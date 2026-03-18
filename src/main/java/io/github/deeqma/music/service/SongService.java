@@ -90,7 +90,19 @@ public class SongService {
         }
         return result;
     }
-
+    public List<SongDto> searchSongs(String query, int page, int pageSize) {
+        log.info("searchSongs: searching for '{}'", query);
+        List<Song> songs = songRepository.findAll(
+                SongSpecification.search(query),
+                PageRequest.of(page, pageSize)
+        ).getContent();
+        log.info("searchSongs: found {} songs", songs.size());
+        List<SongDto> result = new ArrayList<>();
+        for (Song song : songs) {
+            result.add(toDto(song));
+        }
+        return result;
+    }
     public ResourceRegion StreamSong(Long id, HttpHeaders headers) {
 
         log.info("getSongRegion: streaming song ID {}", id);

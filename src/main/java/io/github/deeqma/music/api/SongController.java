@@ -54,6 +54,14 @@ public class SongController {
         return ResponseEntity.ok(songService.getAllSongs(page, pageSize));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<SongDto>> searchSongs(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "15") @Min(1) int pageSize) {
+        return ResponseEntity.ok(songService.searchSongs(query, page, pageSize));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<SongDto> updateSong(
             @PathVariable Long id,

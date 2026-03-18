@@ -2,6 +2,7 @@ package io.github.deeqma.music.api;
 
 import io.github.deeqma.music.dto.CreateOrUpdatePlaylistDto;
 import io.github.deeqma.music.dto.PlaylistDto;
+import io.github.deeqma.music.dto.SongDto;
 import io.github.deeqma.music.dto.SongFilterDto;
 import io.github.deeqma.music.service.PlaylistService;
 import jakarta.validation.Valid;
@@ -51,6 +52,18 @@ public class PlaylistController {
             @AuthenticationPrincipal Jwt jwt) {
         UUID userId = extractUserId(jwt);
         return ResponseEntity.ok(playlistService.getPlaylistById(id, userId, filterDto, page, pageSize));
+    }
+
+    @GetMapping("/{id}/search")
+    public ResponseEntity<List<SongDto>> searchSongsInPlaylist(
+            @PathVariable Long id,
+            @RequestParam String query,
+            @RequestParam(required = false) String shareToken,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "15") @Min(1) int pageSize,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = extractUserId(jwt);
+        return ResponseEntity.ok(playlistService.searchSongsInPlaylist(id, query, shareToken, userId, page, pageSize));
     }
 
     @PostMapping("/{id}/share")
