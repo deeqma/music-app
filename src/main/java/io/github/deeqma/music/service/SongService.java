@@ -91,7 +91,7 @@ public class SongService {
         return result;
     }
 
-    public ResourceRegion getSongRegion(Long id, HttpHeaders headers) {
+    public ResourceRegion StreamSong(Long id, HttpHeaders headers) {
 
         log.info("getSongRegion: streaming song ID {}", id);
 

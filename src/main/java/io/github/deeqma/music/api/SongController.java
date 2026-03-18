@@ -80,7 +80,7 @@ public class SongController {
             @PathVariable Long id,
             @RequestHeader HttpHeaders headers) {
 
-        ResourceRegion region = songService.getSongRegion(id, headers);
+        ResourceRegion region = songService.StreamSong(id, headers);
 
         return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
                 .contentType(MediaType.parseMediaType("audio/mpeg"))
