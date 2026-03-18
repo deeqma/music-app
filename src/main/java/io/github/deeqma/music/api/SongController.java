@@ -8,9 +8,8 @@ import io.github.deeqma.music.service.SongService;
 import io.github.deeqma.music.service.UploadSongService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.support.ResourceRegion;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -74,6 +73,20 @@ public class SongController {
     public ResponseEntity<Void> deleteSong(@PathVariable Long id) {
         songService.deleteSong(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/stream")
+    public ResponseEntity<ResourceRegion> streamSong(
+            @PathVariable Long id,
+            @RequestHeader HttpHeaders headers) {
+
+        ResourceRegion region = songService.getSongRegion(id, headers);
+
+        return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
+                .contentType(MediaType.parseMediaType("audio/mpeg"))
+                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                .body(region);
     }
 
 }

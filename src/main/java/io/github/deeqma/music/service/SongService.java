@@ -10,13 +10,19 @@ import io.github.deeqma.music.repository.SongRepository;
 import io.github.deeqma.music.utils.SongSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.core.io.support.ResourceRegion;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpRange;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,6 +91,40 @@ public class SongService {
         return result;
     }
 
+    public ResourceRegion getSongRegion(Long id, HttpHeaders headers) {
+
+        log.info("getSongRegion: streaming song ID {}", id);
+
+        Song song = findSongById(id);
+
+        try {
+            Path path = Paths.get(song.getFilePath());
+            Resource resource = new UrlResource(path.toUri());
+
+            if (!resource.exists()) {
+                throw new SongException(ErrorType.FILE_NOT_FOUND, "Song file not found on disk");
+            }
+
+            return resolveRegion(resource, headers);
+
+        } catch (IOException e) {
+            throw new SongException(ErrorType.FILE_NOT_FOUND, "Song file not found", e);
+        }
+    }
+
+    private ResourceRegion resolveRegion(Resource resource, HttpHeaders headers) throws IOException {
+        long contentLength = resource.contentLength();
+        HttpRange range = headers.getRange().isEmpty() ? null : headers.getRange().getFirst();
+
+        if (range != null) {
+            long start = range.getRangeStart(contentLength);
+            long end = range.getRangeEnd(contentLength);
+            long rangeLength = Math.min(1048576, end - start + 1);
+            return new ResourceRegion(resource, start, rangeLength);
+        }
+
+        return new ResourceRegion(resource, 0, Math.min(1048576, contentLength));
+    }
 
     public void deleteSong(Long id) {
 
