@@ -2,10 +2,12 @@ package io.github.deeqma.music.service;
 
 import io.github.deeqma.music.dto.CreateOrUpdateSongDto;
 import io.github.deeqma.music.dto.SongDto;
+import io.github.deeqma.music.dto.SongFilterDto;
 import io.github.deeqma.music.error.ErrorType;
 import io.github.deeqma.music.error.SongException;
 import io.github.deeqma.music.model.Song;
 import io.github.deeqma.music.repository.SongRepository;
+import io.github.deeqma.music.utils.SongSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -63,6 +65,20 @@ public class SongService {
         Song updated = songRepository.save(song);
         log.info("updateSong: song ID {} updated", id);
         return toDto(updated);
+    }
+
+    public List<SongDto> filterSongs(SongFilterDto filterDto, int page, int pageSize) {
+        log.info("filterSongs: filtering songs");
+        List<Song> songs = songRepository.findAll(
+                SongSpecification.filter(filterDto),
+                PageRequest.of(page, pageSize)
+        ).getContent();
+        log.info("filterSongs: found {} songs", songs.size());
+        List<SongDto> result = new ArrayList<>();
+        for (Song song : songs) {
+            result.add(toDto(song));
+        }
+        return result;
     }
 
     public SongDto toDto(Song song) {

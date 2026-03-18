@@ -3,6 +3,7 @@ package io.github.deeqma.music.api;
 
 import io.github.deeqma.music.dto.CreateOrUpdateSongDto;
 import io.github.deeqma.music.dto.SongDto;
+import io.github.deeqma.music.dto.SongFilterDto;
 import io.github.deeqma.music.service.SongService;
 import io.github.deeqma.music.service.UploadSongService;
 import jakarta.validation.Valid;
@@ -59,6 +60,14 @@ public class SongController {
             @PathVariable Long id,
             @RequestBody @Valid CreateOrUpdateSongDto dto) {
         return ResponseEntity.ok(songService.updateSong(id, dto));
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<List<SongDto>> filterSongs(
+            @ModelAttribute SongFilterDto filterDto,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "15") @Min(1) int pageSize) {
+        return ResponseEntity.ok(songService.filterSongs(filterDto, page, pageSize));
     }
 
 }
