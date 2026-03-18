@@ -2,6 +2,8 @@ package io.github.deeqma.music.error;
 
 public enum ErrorType {
 
+    PLAYLIST_LIMIT_REACHED,
+    USER_NOT_FOUND,
     DUPLICATED_SONG,
     FILE_NOT_FOUND,
     SONG_NOT_FOUND,
