@@ -36,7 +36,7 @@ public class JwtUtil {
                     .subject(username)
                     .claim("userId", userId.toString())
                     .claim("scope", List.of("read", "write", "delete"))
-                    .issuer("bologverket-pokeapi-app")
+                    .issuer("Music App")
                     .issueTime(new Date())
                     .expirationTime(new Date(System.currentTimeMillis() + expirationMs))
                     .build();
