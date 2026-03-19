@@ -254,6 +254,59 @@ class SongServiceIT extends AbstractPostgresContainer {
     }
 
     @Nested
+    class ToggleLike {
+
+        @Test
+        void likesSongSuccessfully() {
+            Song song = songRepository.findAll().stream()
+                    .filter(s -> s.getSongName().equals("Highway Star"))
+                    .findFirst().orElseThrow();
+
+            String result = songService.toggleLike(song.getId(), testUserId);
+
+            assertEquals("Successfully liked: Highway Star", result);
+            assertTrue(likedSongRepository.existsBySongIdAndUserId(song.getId(), testUserId));
+        }
+
+        @Test
+        void unlikesSongSuccessfully() {
+            Song song = songRepository.findAll().stream()
+                    .filter(s -> s.getSongName().equals("Highway Star"))
+                    .findFirst().orElseThrow();
+
+            songService.toggleLike(song.getId(), testUserId);
+            String result = songService.toggleLike(song.getId(), testUserId);
+
+            assertEquals("Successfully unliked: Highway Star", result);
+            assertFalse(likedSongRepository.existsBySongIdAndUserId(song.getId(), testUserId));
+        }
+
+        @Test
+        void throwsSongNotFoundWhenSongDoesNotExist() {
+            SongException ex = assertThrows(SongException.class,
+                    () -> songService.toggleLike(999L, testUserId));
+
+            assertEquals(ErrorType.SONG_NOT_FOUND, ex.getErrorType());
+        }
+
+        @Test
+        void likingDoesNotAffectOtherUsers() {
+            User otherUser = new User();
+            otherUser.setUsername("otheruser");
+            otherUser.setHashedPassword("hashedpassword");
+            userRepository.save(otherUser);
+
+            Song song = songRepository.findAll().stream()
+                    .filter(s -> s.getSongName().equals("Highway Star"))
+                    .findFirst().orElseThrow();
+
+            songService.toggleLike(song.getId(), testUserId);
+
+            assertFalse(likedSongRepository.existsBySongIdAndUserId(song.getId(), otherUser.getId()));
+        }
+    }
+
+    @Nested
     class SearchSongs {
 
         @Test

@@ -5,9 +5,12 @@ import io.github.deeqma.music.dto.SongDto;
 import io.github.deeqma.music.dto.SongFilterDto;
 import io.github.deeqma.music.error.ErrorType;
 import io.github.deeqma.music.error.SongException;
+import io.github.deeqma.music.model.LikedSong;
 import io.github.deeqma.music.model.Song;
+import io.github.deeqma.music.model.User;
 import io.github.deeqma.music.repository.LikedSongRepository;
 import io.github.deeqma.music.repository.SongRepository;
+import io.github.deeqma.music.repository.UserRepository;
 import io.github.deeqma.music.utils.SongSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +22,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -38,10 +42,12 @@ public class SongService {
 
     private final SongRepository songRepository;
     private final LikedSongRepository likedSongRepository;
+    private final UserRepository userRepository;
 
-    public SongService(SongRepository songRepository, LikedSongRepository likedSongRepository) {
+    public SongService(SongRepository songRepository, LikedSongRepository likedSongRepository, UserRepository userRepository) {
         this.songRepository = songRepository;
         this.likedSongRepository = likedSongRepository;
+        this.userRepository = userRepository;
     }
 
     public List<SongDto> getAllSongs(SongFilterDto filterDto, UUID userId, int page, int pageSize) {
@@ -66,6 +72,30 @@ public class SongService {
                 .and((root, _, _) -> root.get("id").in(likedSongIds));
 
         return fetchSongs(spec, userId, page, pageSize);
+    }
+
+    @Transactional
+    public String toggleLike(Long songId, UUID userId) {
+
+        log.info("toggleLike: toggling like for song ID {} by user {}", songId, userId);
+
+        Song song = findSongById(songId);
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new SongException(ErrorType.SONG_NOT_FOUND, "User not found")
+        );
+
+        if (likedSongRepository.existsBySongIdAndUserId(songId, userId)) {
+            likedSongRepository.deleteBySongIdAndUserId(songId, userId);
+            log.info("toggleLike: song '{}' unliked by user {}", song.getSongName(), userId);
+            return "Successfully unliked: " + song.getSongName();
+        }
+
+        LikedSong likedSong = new LikedSong();
+        likedSong.setSong(song);
+        likedSong.setUser(user);
+        likedSongRepository.save(likedSong);
+        log.info("toggleLike: song '{}' liked by user {}", song.getSongName(), userId);
+        return "Successfully liked: " + song.getSongName();
     }
 
     public SongDto updateSong(Long id, CreateOrUpdateSongDto dto) {

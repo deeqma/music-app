@@ -82,6 +82,14 @@ public class SongController {
         return ResponseEntity.ok(songService.getLikedSongs(filterDto, userId, page, pageSize));
     }
 
+    @PostMapping("/{id}/like")
+    public ResponseEntity<String> toggleLike(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = extractUserId(jwt);
+        return ResponseEntity.ok(songService.toggleLike(id, userId));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<SongDto> updateSong(
             @PathVariable Long id,

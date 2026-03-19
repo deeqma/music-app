@@ -86,6 +86,16 @@ class SongControllerTest {
     }
 
     @Test
+    void returnsOkOnToggleLike() throws Exception {
+        when(songService.toggleLike(eq(1L), any(UUID.class)))
+                .thenReturn("Successfully liked: Highway Star");
+
+        mockMvc.perform(post("/api/v1/songs/1/like")
+                        .with(mockJwt()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void returnsOkWithCustomPagination() throws Exception {
         when(songService.getAllSongs(any(SongFilterDto.class), any(UUID.class), eq(1), eq(30)))
                 .thenReturn(List.of());
