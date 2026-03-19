@@ -24,7 +24,7 @@ public class JwtUtil {
 
     public JwtUtil(
             @Value("${jwt.secret}") String secret,
-            @Value("${jwt.expiration-ms:86400000}") long expirationMs
+            @Value("${jwt.expiration-ms:876400000}") long expirationMs
     ) {
         this.secret = secret.getBytes();
         this.expirationMs = expirationMs;
