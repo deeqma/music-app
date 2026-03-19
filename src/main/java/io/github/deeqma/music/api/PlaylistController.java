@@ -20,7 +20,6 @@ import static io.github.deeqma.music.utils.JwtUtil.extractUserId;
 
 @RestController
 @RequestMapping("/api/v0/playlists")
-@CrossOrigin(origins = "http://localhost:5173")
 public class PlaylistController {
 
     private final PlaylistService playlistService;

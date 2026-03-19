@@ -21,7 +21,6 @@ import java.util.UUID;
 import static io.github.deeqma.music.utils.JwtUtil.extractUserId;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/v1/songs")
 public class SongController {
 
