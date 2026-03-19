@@ -9,6 +9,7 @@ import io.github.deeqma.music.repository.SongRepository;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +38,9 @@ public class UploadSongService {
         this.songRepository = songRepository;
         this.songService = songService;
     }
+
+    @Value("${storage.mp3.path}")
+    private String storagePath;
 
     public SongDto uploadSong(MultipartFile file, CreateOrUpdateSongDto dto) {
 
@@ -135,14 +139,14 @@ public class UploadSongService {
     }
 
     private Path resolveStorageDirectory() {
-        Path dir = Paths.get(System.getProperty("user.dir"),
-                "src", "main", "resources", "localstorage", "mp3");
+        Path dir = Paths.get(storagePath);
         File storageDir = dir.toFile();
         if (!storageDir.exists() && !storageDir.mkdirs()) {
             throw new SongException(ErrorType.FILE_STORAGE_ERROR, "Could not create storage directory");
         }
         return dir;
     }
+
 
     private String resolveFileName(String originalFilename) {
         String name = StringUtils.hasText(originalFilename) ? originalFilename : "untitled.mp3";
