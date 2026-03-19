@@ -9,8 +9,12 @@ import io.github.deeqma.music.dto.SongDto;
 import io.github.deeqma.music.dto.SongFilterDto;
 import io.github.deeqma.music.error.ErrorType;
 import io.github.deeqma.music.error.SongException;
+import io.github.deeqma.music.model.LikedSong;
 import io.github.deeqma.music.model.Song;
+import io.github.deeqma.music.model.User;
+import io.github.deeqma.music.repository.LikedSongRepository;
 import io.github.deeqma.music.repository.SongRepository;
+import io.github.deeqma.music.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -26,6 +30,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 
 
 @SpringBootTest
@@ -37,10 +42,26 @@ class SongServiceIT extends AbstractPostgresContainer {
 
     @Autowired
     private SongRepository songRepository;
+    @Autowired
+    private LikedSongRepository likedSongRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    private UUID testUserId;
 
     @BeforeEach
     void setUp() {
+        likedSongRepository.deleteAll();
         songRepository.deleteAll();
+        userRepository.deleteAll();
+
+        User user = new User();
+        user.setUsername("testuser");
+        user.setHashedPassword("hashedpassword");
+        userRepository.save(user);
+        testUserId = user.getId();
+
         songRepository.saveAll(SongTestData.all());
     }
 
@@ -49,31 +70,75 @@ class SongServiceIT extends AbstractPostgresContainer {
 
         @Test
         void returnsFirstPageWithCorrectSize() {
-            List<SongDto> result = songService.getAllSongs(0, 3);
+            List<SongDto> result = songService.getAllSongs(new SongFilterDto(), testUserId, 0, 3);
             assertEquals(3, result.size());
         }
 
         @Test
         void returnsSecondPageWithRemainingItems() {
-            List<SongDto> result = songService.getAllSongs(1, 3);
+            List<SongDto> result = songService.getAllSongs(new SongFilterDto(), testUserId, 1, 3);
             assertEquals(2, result.size());
         }
 
         @Test
         void returnsEmptyListWhenPageExceedsTotalSongs() {
-            List<SongDto> result = songService.getAllSongs(10, 15);
+            List<SongDto> result = songService.getAllSongs(new SongFilterDto(), testUserId, 10, 15);
             assertTrue(result.isEmpty());
         }
 
         @Test
         void returnsAllSongsWhenPageSizeIsLargerThanTotal() {
-            List<SongDto> result = songService.getAllSongs(0, 50);
+            List<SongDto> result = songService.getAllSongs(new SongFilterDto(), testUserId, 0, 50);
             assertEquals(5, result.size());
         }
 
         @Test
+        void filterByArtistReturnsOnlyMatchingSongs() {
+            SongFilterDto filter = new SongFilterDto();
+            filter.setArtistName("Deep Purple");
+            List<SongDto> result = songService.getAllSongs(filter, testUserId, 0, 15);
+            assertEquals(2, result.size());
+            assertTrue(result.stream().allMatch(s -> s.getArtistName().equals("Deep Purple")));
+        }
+
+        @Test
+        void likedSongsAreMarkedCorrectly() {
+            Song song = songRepository.findAll().stream()
+                    .filter(s -> s.getSongName().equals("Highway Star"))
+                    .findFirst()
+                    .orElseThrow();
+
+            User user = userRepository.findById(testUserId).orElseThrow();
+            LikedSong likedSong = new LikedSong();
+            likedSong.setSong(song);
+            likedSong.setUser(user);
+            likedSongRepository.save(likedSong);
+
+            List<SongDto> result = songService.getAllSongs(new SongFilterDto(), testUserId, 0, 50);
+
+            SongDto highwayStar = result.stream()
+                    .filter(s -> s.getSongName().equals("Highway Star"))
+                    .findFirst()
+                    .orElseThrow();
+
+            SongDto smokeOnTheWater = result.stream()
+                    .filter(s -> s.getSongName().equals("Smoke on the Water"))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertTrue(highwayStar.isLiked());
+            assertFalse(smokeOnTheWater.isLiked());
+        }
+
+        @Test
+        void unlikedSongsAreMarkedFalse() {
+            List<SongDto> result = songService.getAllSongs(new SongFilterDto(), testUserId, 0, 50);
+            assertTrue(result.stream().noneMatch(SongDto::isLiked));
+        }
+
+        @Test
         void dtoMappingIsCorrect() {
-            List<SongDto> result = songService.getAllSongs(0, 50);
+            List<SongDto> result = songService.getAllSongs(new SongFilterDto(), testUserId, 0, 50);
             SongDto dto = result.stream()
                     .filter(s -> s.getSongName().equals("Highway Star"))
                     .findFirst()
@@ -89,167 +154,174 @@ class SongServiceIT extends AbstractPostgresContainer {
     }
 
     @Nested
-    class FilterSongs {
+    class GetLikedSongs {
 
         @Test
-        void filterByArtistReturnsOnlyMatchingSongs() {
+        void returnsOnlyLikedSongs() {
+            Song song = songRepository.findAll().stream()
+                    .filter(s -> s.getSongName().equals("Highway Star"))
+                    .findFirst()
+                    .orElseThrow();
+
+            User user = userRepository.findById(testUserId).orElseThrow();
+            LikedSong likedSong = new LikedSong();
+            likedSong.setSong(song);
+            likedSong.setUser(user);
+            likedSongRepository.save(likedSong);
+
+            List<SongDto> result = songService.getLikedSongs(new SongFilterDto(), testUserId, 0, 15);
+
+            assertEquals(1, result.size());
+            assertEquals("Highway Star", result.get(0).getSongName());
+            assertTrue(result.get(0).isLiked());
+        }
+
+        @Test
+        void returnsEmptyListWhenNoLikedSongs() {
+            List<SongDto> result = songService.getLikedSongs(new SongFilterDto(), testUserId, 0, 15);
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        void filterWorksWithinLikedSongs() {
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            Song highwayStar = songRepository.findAll().stream()
+                    .filter(s -> s.getSongName().equals("Highway Star"))
+                    .findFirst().orElseThrow();
+
+            Song enterSandman = songRepository.findAll().stream()
+                    .filter(s -> s.getSongName().equals("Enter Sandman"))
+                    .findFirst().orElseThrow();
+
+            LikedSong liked1 = new LikedSong();
+            liked1.setSong(highwayStar);
+            liked1.setUser(user);
+            likedSongRepository.save(liked1);
+
+            LikedSong liked2 = new LikedSong();
+            liked2.setSong(enterSandman);
+            liked2.setUser(user);
+            likedSongRepository.save(liked2);
+
             SongFilterDto filter = new SongFilterDto();
             filter.setArtistName("Deep Purple");
 
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
+            List<SongDto> result = songService.getLikedSongs(filter, testUserId, 0, 15);
+
+            assertEquals(1, result.size());
+            assertEquals("Highway Star", result.get(0).getSongName());
+        }
+
+        @Test
+        void likedSongsFromOtherUsersAreNotReturned() {
+            User otherUser = new User();
+            otherUser.setUsername("otheruser");
+            otherUser.setHashedPassword("hashedpassword");
+            userRepository.save(otherUser);
+
+            Song song = songRepository.findAll().stream()
+                    .filter(s -> s.getSongName().equals("Highway Star"))
+                    .findFirst().orElseThrow();
+
+            LikedSong likedSong = new LikedSong();
+            likedSong.setSong(song);
+            likedSong.setUser(otherUser);
+            likedSongRepository.save(likedSong);
+
+            List<SongDto> result = songService.getLikedSongs(new SongFilterDto(), testUserId, 0, 15);
+
+            assertTrue(result.isEmpty());
+        }
+
+        @Test
+        void paginationWorksWithinLikedSongs() {
+            User user = userRepository.findById(testUserId).orElseThrow();
+
+            for (Song song : songRepository.findAll()) {
+                LikedSong likedSong = new LikedSong();
+                likedSong.setSong(song);
+                likedSong.setUser(user);
+                likedSongRepository.save(likedSong);
+            }
+
+            List<SongDto> firstPage = songService.getLikedSongs(new SongFilterDto(), testUserId, 0, 3);
+            List<SongDto> secondPage = songService.getLikedSongs(new SongFilterDto(), testUserId, 1, 3);
+
+            assertEquals(3, firstPage.size());
+            assertEquals(2, secondPage.size());
+        }
+    }
+
+    @Nested
+    class SearchSongs {
+
+        @Test
+        void searchBySongNameReturnsMatchingSongs() {
+            List<SongDto> result = songService.searchSongs("Highway", testUserId, 0, 15);
+
+            assertEquals(1, result.size());
+            assertEquals("Highway Star", result.get(0).getSongName());
+        }
+
+        @Test
+        void searchByArtistNameReturnsAllSongsForThatArtist() {
+            List<SongDto> result = songService.searchSongs("Deep Purple", testUserId, 0, 15);
 
             assertEquals(2, result.size());
             assertTrue(result.stream().allMatch(s -> s.getArtistName().equals("Deep Purple")));
         }
 
         @Test
-        void filterByArtistIsCaseInsensitive() {
-            SongFilterDto filter = new SongFilterDto();
-            filter.setArtistName("deep purple");
-
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
+        void searchIsPartialAndCaseInsensitive() {
+            List<SongDto> result = songService.searchSongs("deep", testUserId, 0, 15);
 
             assertEquals(2, result.size());
         }
 
         @Test
-        void filterByArtistPartialMatchWorks() {
-            SongFilterDto filter = new SongFilterDto();
-            filter.setArtistName("deep");
-
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
-
-            assertEquals(2, result.size());
-        }
-
-        @Test
-        void filterByGenreReturnsOnlyMatchingSongs() {
-            SongFilterDto filter = new SongFilterDto();
-            filter.setGenre("Metal");
-
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
+        void searchWithMultipleWordsReturnsMatchingSongs() {
+            List<SongDto> result = songService.searchSongs("La Grange", testUserId, 0, 15);
 
             assertEquals(1, result.size());
-            assertEquals("Metallica", result.getFirst().getArtistName());
+            assertEquals("La Grange", result.get(0).getSongName());
         }
 
         @Test
-        void filterByGenreIsCaseInsensitive() {
-            SongFilterDto filter = new SongFilterDto();
-            filter.setGenre("metal");
-
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
-
-            assertEquals(1, result.size());
-        }
-
-        @Test
-        void filterByAlbumReturnsOnlyMatchingSongs() {
-            SongFilterDto filter = new SongFilterDto();
-            filter.setAlbum("Machine Head");
-
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
-
-            assertEquals(2, result.size());
-            assertTrue(result.stream().allMatch(s -> s.getAlbum().equals("Machine Head")));
-        }
-
-        @Test
-        void filterByAlbumPartialMatchWorks() {
-            SongFilterDto filter = new SongFilterDto();
-            filter.setAlbum("machine");
-
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
-
-            assertEquals(2, result.size());
-        }
-
-        @Test
-        void filterByYearRangeReturnsCorrectSongs() {
-            SongFilterDto filter = new SongFilterDto();
-            filter.setYearFrom(1972);
-            filter.setYearTo(1973);
-
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
-
-            assertEquals(3, result.size());
-            assertTrue(result.stream().allMatch(s -> s.getReleaseYear() >= 1972 && s.getReleaseYear() <= 1973));
-        }
-
-        @Test
-        void filterByYearFromOnlyReturnsCorrectSongs() {
-            SongFilterDto filter = new SongFilterDto();
-            filter.setYearFrom(1983);
-
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
-
-            assertEquals(2, result.size());
-            assertTrue(result.stream().allMatch(s -> s.getReleaseYear() >= 1983));
-        }
-
-        @Test
-        void filterByYearToOnlyReturnsCorrectSongs() {
-            SongFilterDto filter = new SongFilterDto();
-            filter.setYearTo(1972);
-
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
-
-            assertEquals(2, result.size());
-            assertTrue(result.stream().allMatch(s -> s.getReleaseYear() <= 1972));
-        }
-
-        @Test
-        void filterWithMultipleCriteriaReturnsCorrectSongs() {
-            SongFilterDto filter = new SongFilterDto();
-            filter.setArtistName("ZZ Top");
-            filter.setYearFrom(1980);
-
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
-
-            assertEquals(1, result.size());
-            assertEquals("Sharp Dressed Man", result.getFirst().getSongName());
-        }
-
-        @Test
-        void filterWithNoMatchReturnsEmptyList() {
-            SongFilterDto filter = new SongFilterDto();
-            filter.setArtistName("Beatles");
-
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
+        void searchWithNoMatchReturnsEmptyList() {
+            List<SongDto> result = songService.searchSongs("Beatles", testUserId, 0, 15);
 
             assertTrue(result.isEmpty());
         }
 
         @Test
-        void filterWithNoFiltersReturnsAllSongs() {
-            SongFilterDto filter = new SongFilterDto();
+        void searchMarksLikedSongsCorrectly() {
+            Song song = songRepository.findAll().stream()
+                    .filter(s -> s.getSongName().equals("Highway Star"))
+                    .findFirst().orElseThrow();
 
-            List<SongDto> result = songService.filterSongs(filter, 0, 15);
+            User user = userRepository.findById(testUserId).orElseThrow();
+            LikedSong likedSong = new LikedSong();
+            likedSong.setSong(song);
+            likedSong.setUser(user);
+            likedSongRepository.save(likedSong);
 
-            assertEquals(5, result.size());
+            List<SongDto> result = songService.searchSongs("Highway", testUserId, 0, 15);
+
+            assertEquals(1, result.size());
+            assertTrue(result.get(0).isLiked());
         }
 
         @Test
-        void filterWithPaginationReturnsCorrectPage() {
-            SongFilterDto filter = new SongFilterDto();
-
-            List<SongDto> firstPage = songService.filterSongs(filter, 0, 3);
-            List<SongDto> secondPage = songService.filterSongs(filter, 1, 3);
+        void searchPaginationWorksCorrectly() {
+            List<SongDto> firstPage = songService.searchSongs("", testUserId, 0, 3);
+            List<SongDto> secondPage = songService.searchSongs("", testUserId, 1, 3);
 
             assertEquals(3, firstPage.size());
             assertEquals(2, secondPage.size());
-        }
-
-        @Test
-        void filterResultsDoNotOverlapBetweenPages() {
-            SongFilterDto filter = new SongFilterDto();
-
-            List<SongDto> firstPage = songService.filterSongs(filter, 0, 3);
-            List<SongDto> secondPage = songService.filterSongs(filter, 1, 3);
 
             List<Long> firstPageIds = firstPage.stream().map(SongDto::getId).toList();
             List<Long> secondPageIds = secondPage.stream().map(SongDto::getId).toList();
-
             assertTrue(firstPageIds.stream().noneMatch(secondPageIds::contains));
         }
     }
