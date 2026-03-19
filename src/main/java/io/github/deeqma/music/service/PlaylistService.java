@@ -6,6 +6,7 @@ import io.github.deeqma.music.dto.SongDto;
 import io.github.deeqma.music.dto.SongFilterDto;
 import io.github.deeqma.music.error.ErrorType;
 import io.github.deeqma.music.error.PlaylistException;
+import io.github.deeqma.music.error.SongException;
 import io.github.deeqma.music.model.Playlist;
 import io.github.deeqma.music.model.PlaylistVisibility;
 import io.github.deeqma.music.model.Song;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -48,9 +50,7 @@ public class PlaylistService {
 
         log.info("createPlaylist: creating playlist '{}' for user {}", dto.getPlaylistName(), userId);
 
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new PlaylistException(ErrorType.USER_NOT_FOUND, "User not found")
-        );
+        User user = findUserById(userId);
 
         if (playlistRepository.countByOwnerId(userId) >= 30) {
             throw new PlaylistException(ErrorType.PLAYLIST_LIMIT_REACHED, "Playlist limit of 30 reached");
@@ -74,13 +74,12 @@ public class PlaylistService {
         return toDto(saved);
     }
 
+    @Transactional(readOnly = true)
     public List<PlaylistDto> getAllPlaylists(UUID userId) {
 
         log.info("getAllPlaylists: fetching playlists for user {}", userId);
 
-        findUserById(userId);
-
-        List<Playlist> playlists = playlistRepository.findAllByOwnerId(userId);
+        List<Playlist> playlists = playlistRepository.findAllPublicAndOwnedBy(userId);
         log.info("getAllPlaylists: found {} playlists for user {}", playlists.size(), userId);
 
         List<PlaylistDto> result = new ArrayList<>();
@@ -104,14 +103,62 @@ public class PlaylistService {
                 .map(Song::getId)
                 .collect(Collectors.toSet());
 
-        Specification<Song> spec = SongSpecification.filter(filterDto)
-                .and((root, _, _) -> root.get("id").in(songIds));
+        if (songIds.isEmpty()) {
+            PlaylistDto dto = toDto(playlist);
+            dto.setSongDtos(new ArrayList<>());
+            return dto;
+        }
+
+        Specification<Song> inPlaylist = (root, _, _) -> root.get("id").in(songIds);
+        Specification<Song> spec = SongSpecification.filter(filterDto).and(inPlaylist);
 
         List<Song> songs = songRepository.findAll(spec, PageRequest.of(page, pageSize)).getContent();
 
         PlaylistDto dto = toDto(playlist);
         dto.setSongDtos(songs.stream().map(songService::toDto).toList());
         return dto;
+    }
+
+    public PlaylistDto addSongToPlaylist(Long playlistId, Long songId, UUID userId) {
+
+        log.info("addSongToPlaylist: adding song {} to playlist {}", songId, playlistId);
+
+        Playlist playlist = findPlaylistById(playlistId);
+        validateOwnership(playlist, userId);
+
+        Song song = songRepository.findById(songId).orElseThrow(
+                () -> new SongException(ErrorType.SONG_NOT_FOUND, "Song not found")
+        );
+
+        if (playlist.getSongs().contains(song)) {
+            throw new PlaylistException(ErrorType.SONG_ALREADY_IN_PLAYLIST, "Song already exists in playlist");
+        }
+
+        playlist.getSongs().add(song);
+        Playlist saved = playlistRepository.save(playlist);
+        log.info("addSongToPlaylist: song {} added to playlist {}", songId, playlistId);
+        return toDto(saved);
+    }
+
+    public PlaylistDto removeSongFromPlaylist(Long playlistId, Long songId, UUID userId) {
+
+        log.info("removeSongFromPlaylist: removing song {} from playlist {}", songId, playlistId);
+
+        Playlist playlist = findPlaylistById(playlistId);
+        validateOwnership(playlist, userId);
+
+        Song song = songRepository.findById(songId).orElseThrow(
+                () -> new SongException(ErrorType.SONG_NOT_FOUND, "Song not found")
+        );
+
+        if (!playlist.getSongs().contains(song)) {
+            throw new PlaylistException(ErrorType.SONG_NOT_IN_PLAYLIST, "Song not in playlist");
+        }
+
+        playlist.getSongs().remove(song);
+        Playlist saved = playlistRepository.save(playlist);
+        log.info("removeSongFromPlaylist: song {} removed from playlist {}", songId, playlistId);
+        return toDto(saved);
     }
 
     public PlaylistDto generateShareToken(Long playlistId, UUID userId) {
@@ -184,7 +231,7 @@ public class PlaylistService {
     }
 
     private void validateOwnership(Playlist playlist, UUID userId) {
-        if (!playlist.getOwner().getId().equals(userId)) {
+        if (playlist.getOwner() == null || !playlist.getOwner().getId().equals(userId)) {
             throw new PlaylistException(ErrorType.PLAYLIST_NOT_FOUND, "Playlist not found");
         }
     }
@@ -201,8 +248,8 @@ public class PlaylistService {
         return token;
     }
 
-    private void findUserById(UUID userId) {
-        userRepository.findById(userId).orElseThrow(
+    private User findUserById(UUID userId) {
+        return userRepository.findById(userId).orElseThrow(
                 () -> new PlaylistException(ErrorType.USER_NOT_FOUND, "User not found")
         );
     }

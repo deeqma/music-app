@@ -54,6 +54,24 @@ public class PlaylistController {
         return ResponseEntity.ok(playlistService.getPlaylistById(id, userId, filterDto, page, pageSize));
     }
 
+    @PostMapping("/{playlistId}/songs/{songId}")
+    public ResponseEntity<PlaylistDto> addSongToPlaylist(
+            @PathVariable Long playlistId,
+            @PathVariable Long songId,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = extractUserId(jwt);
+        return ResponseEntity.ok(playlistService.addSongToPlaylist(playlistId, songId, userId));
+    }
+
+    @DeleteMapping("/{playlistId}/songs/{songId}")
+    public ResponseEntity<PlaylistDto> removeSongFromPlaylist(
+            @PathVariable Long playlistId,
+            @PathVariable Long songId,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = extractUserId(jwt);
+        return ResponseEntity.ok(playlistService.removeSongFromPlaylist(playlistId, songId, userId));
+    }
+
     @GetMapping("/{id}/search")
     public ResponseEntity<List<SongDto>> searchSongsInPlaylist(
             @PathVariable Long id,

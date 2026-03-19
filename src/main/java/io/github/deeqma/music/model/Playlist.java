@@ -34,7 +34,7 @@ public class Playlist {
     @JsonBackReference
     private User owner;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "playlist_song",
             joinColumns = @JoinColumn(name = "playlist_id"),
