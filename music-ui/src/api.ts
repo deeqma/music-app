@@ -9,8 +9,23 @@ import type {
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return Date.now() >= payload.exp * 1000
+  } catch {
+    return true
+  }
+}
+
 function getToken(): string | null {
-  return localStorage.getItem('access_token')
+  const token = localStorage.getItem('access_token')
+  if (!token) return null
+  if (isTokenExpired(token)) {
+    localStorage.removeItem('access_token')
+    return null
+  }
+  return token
 }
 
 async function http<T>(path: string, options: RequestInit = {}): Promise<T> {
