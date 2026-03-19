@@ -6,6 +6,7 @@ import io.github.deeqma.music.dto.SongFilterDto;
 import io.github.deeqma.music.error.ErrorType;
 import io.github.deeqma.music.error.SongException;
 import io.github.deeqma.music.model.Song;
+import io.github.deeqma.music.repository.LikedSongRepository;
 import io.github.deeqma.music.repository.SongRepository;
 import io.github.deeqma.music.utils.SongSpecification;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.core.io.support.ResourceRegion;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRange;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class SongService {
@@ -33,19 +37,35 @@ public class SongService {
     private static final Logger log = LoggerFactory.getLogger(SongService.class);
 
     private final SongRepository songRepository;
+    private final LikedSongRepository likedSongRepository;
 
-    public SongService(SongRepository songRepository) {
+    public SongService(SongRepository songRepository, LikedSongRepository likedSongRepository) {
         this.songRepository = songRepository;
+        this.likedSongRepository = likedSongRepository;
     }
 
-    public List<SongDto> getAllSongs(int page, int pageSize) {
-        List<Song> songs = songRepository.findAll(PageRequest.of(page, pageSize)).getContent();
-        log.info("getAllSongs: fetched {} songs (page {}, size {})", songs.size(), page, pageSize);
-        List<SongDto> result = new ArrayList<>();
-        for (Song song : songs) {
-            result.add(toDto(song));
+    public List<SongDto> getAllSongs(SongFilterDto filterDto, UUID userId, int page, int pageSize) {
+        log.info("getAllSongs: fetching songs (page {}, size {})", page, pageSize);
+        return fetchSongs(SongSpecification.filter(filterDto), userId, page, pageSize);
+    }
+
+    public List<SongDto> searchSongs(String query, UUID userId, int page, int pageSize) {
+        log.info("searchSongs: searching for '{}'", query);
+        return fetchSongs(SongSpecification.search(query), userId, page, pageSize);
+    }
+
+    public List<SongDto> getLikedSongs(SongFilterDto filterDto, UUID userId, int page, int pageSize) {
+        log.info("getLikedSongs: fetching liked songs for user {}", userId);
+        Set<Long> likedSongIds = likedSongRepository.findSongIdsByUserId(userId);
+
+        if (likedSongIds.isEmpty()) {
+            return new ArrayList<>();
         }
-        return result;
+
+        Specification<Song> spec = SongSpecification.filter(filterDto)
+                .and((root, _, _) -> root.get("id").in(likedSongIds));
+
+        return fetchSongs(spec, userId, page, pageSize);
     }
 
     public SongDto updateSong(Long id, CreateOrUpdateSongDto dto) {
@@ -77,32 +97,19 @@ public class SongService {
         return toDto(updated);
     }
 
-    public List<SongDto> filterSongs(SongFilterDto filterDto, int page, int pageSize) {
-        log.info("filterSongs: filtering songs");
-        List<Song> songs = songRepository.findAll(
-                SongSpecification.filter(filterDto),
-                PageRequest.of(page, pageSize)
-        ).getContent();
-        log.info("filterSongs: found {} songs", songs.size());
+    private List<SongDto> fetchSongs(Specification<Song> spec, UUID userId, int page, int pageSize) {
+        List<Song> songs = songRepository.findAll(spec, PageRequest.of(page, pageSize)).getContent();
+        Set<Long> likedSongIds = likedSongRepository.findSongIdsByUserId(userId);
         List<SongDto> result = new ArrayList<>();
         for (Song song : songs) {
-            result.add(toDto(song));
+            SongDto dto = toDto(song);
+            dto.setLiked(likedSongIds.contains(song.getId()));
+            result.add(dto);
         }
+        log.info("fetchSongs: returning {} songs", result.size());
         return result;
     }
-    public List<SongDto> searchSongs(String query, int page, int pageSize) {
-        log.info("searchSongs: searching for '{}'", query);
-        List<Song> songs = songRepository.findAll(
-                SongSpecification.search(query),
-                PageRequest.of(page, pageSize)
-        ).getContent();
-        log.info("searchSongs: found {} songs", songs.size());
-        List<SongDto> result = new ArrayList<>();
-        for (Song song : songs) {
-            result.add(toDto(song));
-        }
-        return result;
-    }
+
     public ResourceRegion StreamSong(Long id, HttpHeaders headers) {
 
         log.info("getSongRegion: streaming song ID {}", id);

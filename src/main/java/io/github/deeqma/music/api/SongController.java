@@ -10,10 +10,15 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.core.io.support.ResourceRegion;
 import org.springframework.http.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
+
+import static io.github.deeqma.music.utils.JwtUtil.extractUserId;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:5173")
@@ -49,17 +54,32 @@ public class SongController {
 
     @GetMapping
     public ResponseEntity<List<SongDto>> getAllSongs(
+            @ModelAttribute SongFilterDto filterDto,
             @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "15") @Min(1) int pageSize) {
-        return ResponseEntity.ok(songService.getAllSongs(page, pageSize));
+            @RequestParam(defaultValue = "15") @Min(1) int pageSize,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = extractUserId(jwt);
+        return ResponseEntity.ok(songService.getAllSongs(filterDto, userId, page, pageSize));
     }
 
     @GetMapping("/search")
     public ResponseEntity<List<SongDto>> searchSongs(
             @RequestParam String query,
             @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "15") @Min(1) int pageSize) {
-        return ResponseEntity.ok(songService.searchSongs(query, page, pageSize));
+            @RequestParam(defaultValue = "15") @Min(1) int pageSize,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = extractUserId(jwt);
+        return ResponseEntity.ok(songService.searchSongs(query, userId, page, pageSize));
+    }
+
+    @GetMapping("/liked")
+    public ResponseEntity<List<SongDto>> getLikedSongs(
+            @ModelAttribute SongFilterDto filterDto,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "15") @Min(1) int pageSize,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = extractUserId(jwt);
+        return ResponseEntity.ok(songService.getLikedSongs(filterDto, userId, page, pageSize));
     }
 
     @PutMapping("/{id}")
@@ -67,14 +87,6 @@ public class SongController {
             @PathVariable Long id,
             @RequestBody @Valid CreateOrUpdateSongDto dto) {
         return ResponseEntity.ok(songService.updateSong(id, dto));
-    }
-
-    @GetMapping("/filter")
-    public ResponseEntity<List<SongDto>> filterSongs(
-            @ModelAttribute SongFilterDto filterDto,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "15") @Min(1) int pageSize) {
-        return ResponseEntity.ok(songService.filterSongs(filterDto, page, pageSize));
     }
 
     @DeleteMapping("/{id}")
