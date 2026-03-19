@@ -140,7 +140,7 @@ public class SongService {
         return result;
     }
 
-    public ResourceRegion StreamSong(Long id, HttpHeaders headers) {
+    public ResourceRegion streamSong(Long id, HttpHeaders headers) {
 
         log.info("getSongRegion: streaming song ID {}", id);
 
@@ -175,6 +175,7 @@ public class SongService {
         return new ResourceRegion(resource, 0, Math.min(1048576, contentLength));
     }
 
+    @Transactional
     public void deleteSong(Long id) {
 
         log.info("deleteSong: deleting song ID {}", id);

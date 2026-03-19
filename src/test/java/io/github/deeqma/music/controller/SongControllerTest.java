@@ -170,7 +170,7 @@ class SongControllerTest {
     void returnsPartialContentOnSuccessfulStream() throws Exception {
         Resource resource = new ByteArrayResource("fake-mp3-content".getBytes());
         ResourceRegion region = new ResourceRegion(resource, 0, resource.contentLength());
-        when(songService.StreamSong(eq(1L), any(HttpHeaders.class))).thenReturn(region);
+        when(songService.streamSong(eq(1L), any(HttpHeaders.class))).thenReturn(region);
 
         mockMvc.perform(get("/api/v1/songs/1/stream")
                         .with(mockJwt()))

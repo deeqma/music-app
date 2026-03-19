@@ -630,7 +630,7 @@ class SongServiceIT extends AbstractPostgresContainer {
             songRepository.save(song);
 
             HttpHeaders headers = new HttpHeaders();
-            ResourceRegion region = songService.StreamSong(song.getId(), headers);
+            ResourceRegion region = songService.streamSong(song.getId(), headers);
 
             assertNotNull(region);
             assertEquals(0, region.getPosition());
@@ -649,7 +649,7 @@ class SongServiceIT extends AbstractPostgresContainer {
             HttpHeaders headers = new HttpHeaders();
             headers.setRange(List.of(HttpRange.createByteRange(0, 7)));
 
-            ResourceRegion region = songService.StreamSong(song.getId(), headers);
+            ResourceRegion region = songService.streamSong(song.getId(), headers);
 
             assertNotNull(region);
             assertEquals(0, region.getPosition());
@@ -661,7 +661,7 @@ class SongServiceIT extends AbstractPostgresContainer {
             HttpHeaders headers = new HttpHeaders();
 
             SongException ex = assertThrows(SongException.class,
-                    () -> songService.StreamSong(999L, headers));
+                    () -> songService.streamSong(999L, headers));
 
             assertEquals(ErrorType.SONG_NOT_FOUND, ex.getErrorType());
         }
@@ -679,7 +679,7 @@ class SongServiceIT extends AbstractPostgresContainer {
             HttpHeaders headers = new HttpHeaders();
 
             SongException ex = assertThrows(SongException.class,
-                    () -> songService.StreamSong(song.getId(), headers));
+                    () -> songService.streamSong(song.getId(), headers));
 
             assertEquals(ErrorType.FILE_NOT_FOUND, ex.getErrorType());
         }
