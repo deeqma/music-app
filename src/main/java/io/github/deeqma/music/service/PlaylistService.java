@@ -119,6 +119,7 @@ public class PlaylistService {
         return dto;
     }
 
+    @Transactional
     public PlaylistDto addSongToPlaylist(Long playlistId, Long songId, UUID userId) {
 
         log.info("addSongToPlaylist: adding song {} to playlist {}", songId, playlistId);
@@ -140,6 +141,7 @@ public class PlaylistService {
         return toDto(saved);
     }
 
+    @Transactional
     public PlaylistDto removeSongFromPlaylist(Long playlistId, Long songId, UUID userId) {
 
         log.info("removeSongFromPlaylist: removing song {} from playlist {}", songId, playlistId);
