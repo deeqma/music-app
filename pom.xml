@@ -17,6 +17,7 @@
 	<properties>
 		<java.version>25</java.version>
 	</properties>
+
 	<dependencies>
 
 		<!-- Essentials -->
@@ -47,26 +48,21 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
 		</dependency>
+
+		<!-- Source: https://mvnrepository.com/artifact/org/jaudiotagger -->
 		<dependency>
 			<groupId>org</groupId>
 			<artifactId>jaudiotagger</artifactId>
 			<version>2.0.3</version>
 			<scope>compile</scope>
 		</dependency>
+
 		<!-- Test -->
-		<!-- Source: https://mvnrepository.com/artifact/org/jaudiotagger -->
+
 		<!-- https://mvnrepository.com/artifact/org.testcontainers/postgresql -->
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>1.21.3</version>
-			<scope>test</scope>
-		</dependency>
-
-		<!-- https://mvnrepository.com/artifact/org.testcontainers/junit-jupiter -->
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>junit-jupiter</artifactId>
 			<version>1.21.3</version>
 			<scope>test</scope>
 		</dependency>
