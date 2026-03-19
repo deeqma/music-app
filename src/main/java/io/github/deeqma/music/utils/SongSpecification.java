@@ -16,6 +16,10 @@ public class SongSpecification {
     }
     public static Specification<Song> filter(SongFilterDto filterDto) {
         return (root, _, cb) -> {
+            if (filterDto == null) {
+                return cb.conjunction();
+            }
+
             List<Predicate> predicates = new ArrayList<>();
 
             if (StringUtils.hasText(filterDto.getGenre())) {
@@ -39,6 +43,10 @@ public class SongSpecification {
 
             if (filterDto.getYearTo() != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("releaseYear"), filterDto.getYearTo()));
+            }
+
+            if (predicates.isEmpty()) {
+                return cb.conjunction();
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

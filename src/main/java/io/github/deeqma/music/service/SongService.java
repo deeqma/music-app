@@ -30,10 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class SongService {
@@ -129,7 +126,10 @@ public class SongService {
 
     private List<SongDto> fetchSongs(Specification<Song> spec, UUID userId, int page, int pageSize) {
         List<Song> songs = songRepository.findAll(spec, PageRequest.of(page, pageSize)).getContent();
-        Set<Long> likedSongIds = likedSongRepository.findSongIdsByUserId(userId);
+        log.debug("fetchSongs: repository returned {} songs before mapping", songs.size());
+        Set<Long> likedSongIds = userId != null
+                ? likedSongRepository.findSongIdsByUserId(userId)
+                : new HashSet<>();
         List<SongDto> result = new ArrayList<>();
         for (Song song : songs) {
             SongDto dto = toDto(song);
