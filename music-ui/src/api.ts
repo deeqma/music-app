@@ -5,6 +5,9 @@ import type {
   CreateSongParams,
   CreatePlaylistParams,
   ErrorResponse,
+  RegisterParams,
+  LoginParams,
+  AuthResponse,
 } from './contracts'
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
@@ -41,16 +44,46 @@ async function http<T>(path: string, options: RequestInit = {}): Promise<T> {
   })
 
   if (!response.ok) {
-    const error: ErrorResponse = await response.json()
-    throw error
+    const contentType = response.headers.get('content-type') ?? ''
+    if (contentType.includes('application/json')) {
+      const error: ErrorResponse = await response.json()
+      throw error
+    }
+    const text = await response.text()
+    throw { status: response.status, message: text } as ErrorResponse
   }
 
   if (response.status === 204) {
     return undefined as T
   }
 
-  return response.json()
+  const contentType = response.headers.get('content-type') ?? ''
+  if (contentType.includes('application/json')) {
+    return response.json()
+  }
+  return response.text() as unknown as T
 }
+
+
+// auth
+
+export const authApi = {
+
+  register(params: RegisterParams): Promise<string> {
+    return http<string>('/api/v0/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    })
+  },
+
+  login(params: LoginParams): Promise<AuthResponse> {
+    return http<AuthResponse>('/api/v0/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    })
+  },
+}
+
 
 // songs
 
@@ -77,6 +110,11 @@ export const songsApi = {
 
   getLiked(params: SongFilterParams = {}): Promise<SongDto[]> {
     const query = new URLSearchParams()
+    if (params.genre) query.set('genre', params.genre)
+    if (params.artistName) query.set('artistName', params.artistName)
+    if (params.album) query.set('album', params.album)
+    if (params.yearFrom) query.set('yearFrom', String(params.yearFrom))
+    if (params.yearTo) query.set('yearTo', String(params.yearTo))
     if (params.page !== undefined) query.set('page', String(params.page))
     if (params.pageSize !== undefined) query.set('pageSize', String(params.pageSize))
     const qs = query.toString()
@@ -119,8 +157,11 @@ export const songsApi = {
   },
 
   streamUrl(id: number): string {
-    return `${BASE_URL}/api/v1/songs/${id}/stream`
+    const token = localStorage.getItem('access_token')
+    const query = token ? `?access_token=${encodeURIComponent(token)}` : ''
+    return `${import.meta.env.VITE_API_URL ?? 'http://localhost:8080'}/api/v1/songs/${id}/stream${query}`
   },
+
 }
 
 // playlists
@@ -140,6 +181,11 @@ export const playlistsApi = {
 
   getById(id: number, params: SongFilterParams = {}): Promise<PlaylistDto> {
     const query = new URLSearchParams()
+    if (params.genre) query.set('genre', params.genre)
+    if (params.artistName) query.set('artistName', params.artistName)
+    if (params.album) query.set('album', params.album)
+    if (params.yearFrom) query.set('yearFrom', String(params.yearFrom))
+    if (params.yearTo) query.set('yearTo', String(params.yearTo))
     if (params.page !== undefined) query.set('page', String(params.page))
     if (params.pageSize !== undefined) query.set('pageSize', String(params.pageSize))
     const qs = query.toString()
@@ -177,4 +223,7 @@ export const playlistsApi = {
       method: 'PATCH',
     })
   },
+  
 }
+
+

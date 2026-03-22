@@ -54,3 +54,18 @@ export interface ErrorResponse {
   timestamp: string
   message: string
 }
+
+export interface RegisterParams {
+  username: string
+  password: string
+}
+
+export interface LoginParams {
+  username: string
+  password: string
+}
+
+// Access token response from backend after successful authentication
+export interface AuthResponse {
+  accessToken: string
+}
