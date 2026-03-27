@@ -11,10 +11,10 @@ const THEMES: { value: ThemeName; label: string }[] = [
 ]
 
 interface TopBarProps {
-  theme: ThemeName
-  mode: ThemeMode
-  setTheme: (t: ThemeName) => void
-  toggleMode: () => void
+  readonly theme:      ThemeName
+  readonly mode:       ThemeMode
+  readonly setTheme:   (t: ThemeName) => void
+  readonly toggleMode: () => void
 }
 
 export default function TopBar({ theme, mode, setTheme, toggleMode }: TopBarProps) {

@@ -1,19 +1,21 @@
 .sidebar {
   grid-row: 1 / 3;
   grid-column: 1;
-  background-color: var(--color-surface);
+  background-color: var(--color-bg);
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 16px 0;
+  padding: 0;
 }
 
 .sidebar__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px 12px;
+  height: 50px;
+  padding: 0 16px;
+  flex-shrink: 0;
 }
 
 .sidebar__title {
@@ -25,7 +27,7 @@
 .sidebar__divider {
   border: none;
   border-top: 1px solid var(--color-border);
-  margin: 6px 0;
+  margin: 0;
 }
 
 .sidebar__nav {
@@ -33,6 +35,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 4px 8px;
+  margin-top: 8px;
 }
 
 .sidebar__nav-item {
@@ -45,6 +48,7 @@
   transition: background-color 0.15s;
   width: 100%;
   text-align: left;
+  text-decoration: none;
 }
 
 .sidebar__nav-item:hover {
@@ -105,6 +109,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
+  text-decoration: none;
 }
 
 .sidebar__playlist-item:hover {

@@ -1,43 +1,46 @@
+import { Outlet, useLocation } from 'react-router-dom'
 import Icon from '../components/Icon'
 import searchRaw from '../assets/search.svg?raw'
-import filterRaw from '../assets/filter.svg?raw'
-import type { Page } from './Sidebar'
 
-function getPageLabel(page: Page): string {
-  if (page === 'explore')      return 'Explore'
-  if (page === 'liked-songs')  return 'Liked Songs'
-  if (page === 'profile')      return 'Profile'
-  if (page.startsWith('playlist:')) return page.slice('playlist:'.length)
-  return page
+function usePageLabel(): string {
+  const { pathname } = useLocation()
+
+  if (pathname === '/explore')     return 'Explore'
+  if (pathname === '/liked-songs') return 'Liked Songs'
+  if (pathname === '/profile')     return 'Profile'
+  return ''
 }
 
-interface MainContentProps {
-  page: Page
-}
+export default function MainContent() {
+  const label      = usePageLabel()
+  const { pathname } = useLocation()
+  const isPlaylist  = pathname.startsWith('/playlist/') || pathname === '/profile'
 
-export default function MainContent({ page }: MainContentProps) {
   return (
     <main className="main-content">
-      <div className="main-content__topbar">
-        <span className="main-content__page-label">{getPageLabel(page)}</span>
+      {!isPlaylist && (
+        <>
+          <div className="main-content__topbar">
+            <span className="main-content__page-label">{label}</span>
 
-        <div className="main-content__search">
-          <Icon src={searchRaw} size={18} color="accent" alt="search" />
-          <input
-            type="text"
-            className="main-content__search-input"
-            placeholder="Search..."
-          />
-        </div>
+            <div className="main-content__search">
+              <Icon src={searchRaw} size={18} color="accent" alt="search" />
+              <input
+                type="text"
+                className="main-content__search-input"
+                placeholder="Search..."
+              />
+            </div>
 
-        <button className="main-content__filter-btn" aria-label="Filter">
-          <Icon src={filterRaw} size={18} color="accent" alt="filter" />
-        </button>
+          </div>
+
+          <hr className="main-content__divider" />
+        </>
+      )}
+
+      <div className="main-content__body">
+        <Outlet />
       </div>
-
-      <hr className="main-content__divider" />
-
-      <div className="main-content__body" />
     </main>
   )
 }

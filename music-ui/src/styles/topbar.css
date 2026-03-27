@@ -1,7 +1,7 @@
 .topbar {
   grid-row: 1;
   grid-column: 2;
-  background-color: var(--color-surface);
+  background-color: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
@@ -23,7 +23,7 @@
   padding: 6px 14px;
   border-radius: 6px;
   border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
+  background-color: var(--color-bg);
   color: var(--color-text-primary);
   font-size: 13px;
   transition: background-color 0.15s, border-color 0.15s;
@@ -38,7 +38,7 @@
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  background-color: var(--color-surface);
+  background-color: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 4px;

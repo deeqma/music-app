@@ -3,3 +3,9 @@
 @import './styles/sidebar.css';
 @import './styles/topbar.css';
 @import './styles/maincontent.css';
+@import './styles/table.css';
+@import './styles/drawer.css';
+@import './styles/playlist.css';
+@import './styles/filter.css';
+@import './styles/import-modal.css';
+@import './styles/profile.css';
