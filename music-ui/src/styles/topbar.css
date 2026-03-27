@@ -1,0 +1,82 @@
+.topbar {
+  grid-row: 1;
+  grid-column: 2;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 16px;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar__theme-selector {
+  position: relative;
+}
+
+.topbar__theme-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: 13px;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.topbar__theme-btn:hover {
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-accent);
+}
+
+.topbar__theme-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 4px;
+  min-width: 120px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.topbar__theme-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 5px;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  transition: background-color 0.15s;
+}
+
+.topbar__theme-option:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.topbar__theme-option--active {
+  color: var(--color-accent);
+  background-color: var(--color-accent-fade);
+}
+
+.topbar__toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  transition: background-color 0.15s;
+}
+
+.topbar__toggle-btn:hover {
+  background-color: var(--color-surface-hover);
+}

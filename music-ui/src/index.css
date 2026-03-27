@@ -1,0 +1,5 @@
+@import './styles/variables.css';
+@import './styles/global.css';
+@import './styles/sidebar.css';
+@import './styles/topbar.css';
+@import './styles/maincontent.css';
