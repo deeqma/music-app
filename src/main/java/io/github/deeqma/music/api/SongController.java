@@ -43,7 +43,12 @@ public class SongController {
             @RequestParam("artistName") String artistName,
             @RequestParam(value = "album", required = false) String album,
             @RequestParam(value = "genre", required = false) String genre,
-            @RequestParam("releaseYear") int releaseYear) {
+            @RequestParam("releaseYear") int releaseYear,
+            @AuthenticationPrincipal Jwt jwt) {
+        Role role = extractRole(jwt);
+        if (role != Role.ADMIN) {
+            throw new UserException(ErrorType.UNAUTHORIZED, "Only admins can  upload songs");
+        }
 
         CreateOrUpdateSongDto dto = new CreateOrUpdateSongDto();
         dto.setSongName(songName);
