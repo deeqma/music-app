@@ -78,3 +78,7 @@ export default defineConfig([
 ## Design
 
 ![img.png](img.png)
+
+
+## final version, Dark mode (forest theme)
+![img_1.png](img_1.png)
