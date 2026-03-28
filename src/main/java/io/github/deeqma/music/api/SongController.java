@@ -4,6 +4,9 @@ package io.github.deeqma.music.api;
 import io.github.deeqma.music.dto.CreateOrUpdateSongDto;
 import io.github.deeqma.music.dto.SongDto;
 import io.github.deeqma.music.dto.SongFilterDto;
+import io.github.deeqma.music.error.ErrorType;
+import io.github.deeqma.music.error.UserException;
+import io.github.deeqma.music.model.Role;
 import io.github.deeqma.music.service.SongService;
 import io.github.deeqma.music.service.UploadSongService;
 import jakarta.validation.Valid;
@@ -18,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.UUID;
 
+import static io.github.deeqma.music.utils.JwtUtil.extractRole;
 import static io.github.deeqma.music.utils.JwtUtil.extractUserId;
 
 @RestController
@@ -92,12 +96,22 @@ public class SongController {
     @PutMapping("/{id}")
     public ResponseEntity<SongDto> updateSong(
             @PathVariable Long id,
-            @RequestBody @Valid CreateOrUpdateSongDto dto) {
+            @RequestBody @Valid CreateOrUpdateSongDto dto,
+            @AuthenticationPrincipal Jwt jwt) {
+        Role role = extractRole(jwt);
+        if (role != Role.ADMIN) {
+            throw new UserException(ErrorType.UNAUTHORIZED, "Only admins can update songs");
+        }
         return ResponseEntity.ok(songService.updateSong(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSong(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteSong(@PathVariable Long id,
+                                           @AuthenticationPrincipal Jwt jwt) {
+        Role role = extractRole(jwt);
+        if (role != Role.ADMIN) {
+            throw new UserException(ErrorType.UNAUTHORIZED, "Only admins can delete songs");
+        }
         songService.deleteSong(id);
         return ResponseEntity.noContent().build();
     }

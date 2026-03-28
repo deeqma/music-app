@@ -84,7 +84,7 @@ public class GlobalExceptionHandler {
             case FILE_STORAGE_ERROR,
                  TOKEN_GENERATION_FAILED -> HttpStatus.INTERNAL_SERVER_ERROR;
             case PLAYLIST_LIMIT_REACHED -> HttpStatus.FORBIDDEN;
-            case BAD_CREDENTIALS -> HttpStatus.UNAUTHORIZED;
+            case BAD_CREDENTIALS, UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
         };
     }
 
