@@ -233,16 +233,15 @@ public class PlaylistService {
     }
 
     public List<SongDto> searchSongsInPlaylist(Long playlistId, String query, String shareToken,
-                                               UUID userId, int page, int pageSize) {
+                                               int page, int pageSize) {
 
         log.info("searchSongsInPlaylist: searching in playlist ID {}", playlistId);
 
         Playlist playlist = findPlaylistById(playlistId);
 
         if (playlist.getVisibility() == PlaylistVisibility.PRIVATE) {
-            boolean hasShareToken = StringUtils.hasText(shareToken) && shareToken.equals(playlist.getShareToken());
-            if (!hasShareToken) {
-                checkOwnership(playlist, userId, "You don't own this playlist and cannot search its songs");
+            if (!StringUtils.hasText(shareToken) || !shareToken.equals(playlist.getShareToken())) {
+                throw new PlaylistException(ErrorType.PLAYLIST_NOT_FOUND, "Playlist not found");
             }
         }
 
@@ -250,16 +249,17 @@ public class PlaylistService {
                 .map(Song::getId)
                 .collect(Collectors.toSet());
 
+        if (songIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         Specification<Song> spec = SongSpecification.search(query)
                 .and((root, _, _) -> root.get("id").in(songIds));
 
         List<Song> songs = songRepository.findAll(spec, PageRequest.of(page, pageSize)).getContent();
         log.info("searchSongsInPlaylist: found {} songs in playlist ID {}", songs.size(), playlistId);
 
-        Set<Long> likedSongIds = likedSongRepository.findSongIdsByUserId(userId);
-        return songs.stream()
-                .map(song -> songService.toDto(song, likedSongIds))
-                .toList();
+        return songs.stream().map(songService::toDto).toList();
     }
 
     public PlaylistDetailsDto toggleVisibility(Long playlistId, boolean isPrivate, UUID userId) {

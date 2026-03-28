@@ -92,10 +92,8 @@ public class PlaylistController {
             @RequestParam String query,
             @RequestParam(required = false) String shareToken,
             @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "15") @Min(1) int pageSize,
-            @AuthenticationPrincipal Jwt jwt) {
-        UUID userId = extractUserId(jwt);
-        return ResponseEntity.ok(playlistService.searchSongsInPlaylist(id, query, shareToken, userId, page, pageSize));
+            @RequestParam(defaultValue = "15") @Min(1) int pageSize) {
+        return ResponseEntity.ok(playlistService.searchSongsInPlaylist(id, query, shareToken, page, pageSize));
     }
 
     @PostMapping("/{id}/share")
