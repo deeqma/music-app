@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import type { SongDto } from '../mock/types'
 import PlayPauseButton from './PlayPauseButton'
 import HeartButton from './HeartButton'
 import SongDrawer from './SongDrawer'
+import { usePlayerStore } from '../store/playerStore'
 
 interface SongTableProps {
   readonly songs: readonly SongDto[]
@@ -15,23 +17,31 @@ function formatDuration(seconds: number): string {
 }
 
 export default function SongTable({ songs }: SongTableProps) {
-  const [playingId,  setPlayingId]  = useState<number | null>(null)
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const location = useLocation()
 
-  const [likedIds, setLikedIds] = useState<Set<number>>(
-    () => new Set(songs.filter(s => s.liked).map(s => s.id))
-  )
+  const { currentSong, isPlaying, likedIds, sourceRoute, playSong, setIsPlaying, toggleLike } = usePlayerStore()
 
-  const togglePlay = (id: number) =>
-    setPlayingId(prev => (prev === id ? null : id))
+  // This table owns the current context only when the source matches this page
+  const isActiveSource = sourceRoute === location.pathname
 
-  const toggleLike = (id: number) =>
-    setLikedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else              next.add(id)
-      return next
-    })
+  function togglePlay(song: SongDto) {
+    if (isActiveSource && currentSong?.id === song.id) {
+      // Same song, same source context — just pause/resume
+      setIsPlaying(!isPlaying)
+    } else {
+      // Different song OR different source — lock context to this table
+      playSong(song, [...songs], location.pathname)
+    }
+  }
+
+  // Scroll to song when navigated here from the audio container song name click
+  useEffect(() => {
+    const scrollId = (location.state as { scrollToSongId?: number } | null)?.scrollToSongId
+    if (!scrollId) return
+    const row = document.querySelector<HTMLElement>(`[data-song-id="${scrollId}"]`)
+    row?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [location.state])
 
   const selectedSong = songs.find(s => s.id === selectedId) ?? null
 
@@ -54,20 +64,26 @@ export default function SongTable({ songs }: SongTableProps) {
 
         <tbody>
           {songs.map(song => {
-            const isPlaying  = playingId  === song.id
-            const isLiked    = likedIds.has(song.id)
-            const isSelected = selectedId === song.id
+            const isCurrentSong   = isActiveSource && currentSong?.id === song.id
+            const isButtonPlaying = isCurrentSong && isPlaying
+            const isLiked         = likedIds.has(song.id)
+            const isSelected      = selectedId === song.id
 
             return (
               <tr
                 key={song.id}
-                className={`song-table__row${isPlaying ? ' song-table__row--playing' : ''}${isSelected ? ' song-table__row--selected' : ''}`}
+                data-song-id={song.id}
+                className={[
+                  'song-table__row',
+                  isCurrentSong ? 'song-table__row--playing' : '',
+                  isSelected    ? 'song-table__row--selected' : '',
+                ].filter(Boolean).join(' ')}
                 onClick={() => setSelectedId(prev => prev === song.id ? null : song.id)}
               >
                 <td className="song-table__col-play" onClick={e => e.stopPropagation()}>
                   <PlayPauseButton
-                    isPlaying={isPlaying}
-                    onToggle={() => togglePlay(song.id)}
+                    isPlaying={isButtonPlaying}
+                    onToggle={() => togglePlay(song)}
                   />
                 </td>
 

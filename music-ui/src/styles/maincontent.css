@@ -7,6 +7,15 @@
   overflow: hidden;
 }
 
+.main-content__body-wrapper {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .main-content__topbar {
   display: flex;
   align-items: center;
@@ -73,8 +82,8 @@
 
 .main-content__body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 20px;
-  position: relative;
 }

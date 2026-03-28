@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import Icon from '../components/Icon'
 import searchRaw from '../assets/search.svg?raw'
+import AudioContainer from '../AudioContainer'
 
 function usePageLabel(): string {
   const { pathname } = useLocation()
@@ -38,9 +39,13 @@ export default function MainContent() {
         </>
       )}
 
-      <div className="main-content__body">
-        <Outlet />
+      <div className="main-content__body-wrapper">
+        <div className="main-content__body">
+          <Outlet />
+        </div>
       </div>
+
+      <AudioContainer />
     </main>
   )
 }

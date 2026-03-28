@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import Icon from '../components/Icon'
 import ImportModal from '../components/ImportModal'
@@ -24,15 +24,30 @@ function playlistClass({ isActive }: { isActive: boolean }) {
 export default function Sidebar() {
   const [playlistsOpen, setPlaylistsOpen] = useState(true)
   const [importOpen,    setImportOpen]    = useState(false)
+  const [open,          setOpen]          = useState(() => window.innerWidth >= 1100)
+
+  useEffect(() => {
+    document.documentElement.dataset.sidebar = open ? 'open' : 'collapsed'
+  }, [open])
 
   return (
     <aside className="sidebar">
       {importOpen && <ImportModal onClose={() => setImportOpen(false)} />}
+
+      {/* Toggle row — always visible */}
       <div className="sidebar__header">
         <span className="sidebar__title">Music App</span>
-        <Icon src={radioRaw} size={20} color="accent" alt="radio" />
+        <button
+          className="sidebar__toggle"
+          onClick={() => setOpen(o => !o)}
+          aria-label={open ? 'Collapse sidebar' : 'Expand sidebar'}
+        >
+          <Icon src={radioRaw} size={20} color="accent" />
+        </button>
       </div>
 
+      {/* Everything below is hidden when collapsed */}
+      <div className="sidebar__content">
       <hr className="sidebar__divider" />
 
       <nav className="sidebar__nav">
@@ -93,6 +108,7 @@ export default function Sidebar() {
           <span>Profile</span>
         </NavLink>
       </div>
+      </div>{}
     </aside>
   )
 }

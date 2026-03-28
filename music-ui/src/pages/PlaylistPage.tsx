@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { playlistBySlug } from '../mock/playlistData'
+import { usePlaylistsStore } from '../store/playlistsStore'
 import SongTableWithFilter from '../components/SongTableWithFilter'
 import Icon from '../components/Icon'
 import musicRaw  from '../assets/music.svg?raw'
@@ -18,8 +18,9 @@ function formatTotalDuration(seconds: number): string {
 }
 
 export default function PlaylistPage() {
-  const { name } = useParams<{ name: string }>()
-  const playlist = name ? playlistBySlug[name] : null
+  const { name }    = useParams<{ name: string }>()
+  const playlists   = usePlaylistsStore(s => s.playlists)
+  const playlist    = playlists.find(p => p.slug === name) ?? null
 
   const [isPrivate, setIsPrivate] = useState(playlist?.visibility === 'PRIVATE')
   const [shareOpen, setShareOpen] = useState(false)
@@ -28,7 +29,7 @@ export default function PlaylistPage() {
 
   if (!playlist) return <p className="playlist-page__not-found">Playlist not found.</p>
 
-  const totalDuration = playlist.songDtos.reduce((sum, s) => sum + s.durationSeconds, 0)
+  const totalDuration = playlist.songDtos.reduce((sum: number, s) => sum + s.durationSeconds, 0)
   const shareUrl      = `${globalThis.location.origin}/share/${playlist.shareToken}`
 
   function toggleVisibility() {
