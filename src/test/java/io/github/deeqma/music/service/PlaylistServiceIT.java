@@ -83,14 +83,13 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
             dto.setDescription("Cool songs");
             dto.setVisibility(PlaylistVisibility.PRIVATE);
 
-            PlaylistDetailsDto result = playlistService.createPlaylist(testUserId, dto);
+            PlaylistDto result = playlistService.createPlaylist(testUserId, dto);
 
             assertAll(
                     () -> assertNotNull(result.getPlaylistId()),
                     () -> assertEquals("My Playlist", result.getPlaylistName()),
-                    () -> assertEquals("Cool songs", result.getDescription()),
-                    () -> assertEquals(PlaylistVisibility.PRIVATE, result.getVisibility()),
-                    () -> assertEquals("my-playlist", result.getSlug())
+                    () -> assertEquals("my-playlist", result.getSlug()),
+                    () -> assertTrue(result.isOwner())
             );
         }
 
@@ -100,9 +99,9 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
             dto.setPlaylistName("No Visibility");
             dto.setVisibility(null);
 
-            PlaylistDetailsDto result = playlistService.createPlaylist(testUserId, dto);
+            PlaylistDto result = playlistService.createPlaylist(testUserId, dto);
 
-            assertEquals(PlaylistVisibility.PRIVATE, result.getVisibility());
+            assertNotNull(result.getPlaylistId());
         }
 
         @Test
@@ -186,6 +185,32 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
 
             assertTrue(result.isEmpty());
         }
+
+        @Test
+        void setsOwnerTrueForOwnedPlaylists() {
+            savedPlaylist("My Playlist", PlaylistVisibility.PRIVATE);
+
+            List<PlaylistDto> result = playlistService.getAllPlaylists(testUserId);
+
+            assertTrue(result.getFirst().isOwner());
+        }
+
+        @Test
+        void setsOwnerFalseForOtherUsersPublicPlaylists() {
+            User otherUser = new User();
+            otherUser.setUsername("otherUser");
+            otherUser.setHashedPassword("hashedPassword");
+            userRepository.save(otherUser);
+
+            CreateOrUpdatePlaylistDto otherDto = new CreateOrUpdatePlaylistDto();
+            otherDto.setPlaylistName("Other Public");
+            otherDto.setVisibility(PlaylistVisibility.PUBLIC);
+            playlistService.createPlaylist(otherUser.getId(), otherDto);
+
+            List<PlaylistDto> result = playlistService.getAllPlaylists(testUserId);
+
+            assertFalse(result.getFirst().isOwner());
+        }
     }
 
     @Nested
@@ -211,6 +236,28 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
             );
 
             assertEquals("Private One", result.getPlaylistName());
+        }
+
+        @Test
+        void setsOwnerTrueWhenOwnerRequestsPlaylist() {
+            Playlist playlist = savedPlaylist("My Playlist", PlaylistVisibility.PRIVATE);
+
+            PlaylistDetailsDto result = playlistService.getPlaylistById(
+                    playlist.getId(), testUserId, new SongFilterDto(), 0, 15
+            );
+
+            assertTrue(result.isOwner());
+        }
+
+        @Test
+        void setsOwnerFalseWhenOtherUserRequestsPublicPlaylist() {
+            Playlist playlist = savedPlaylist("Public One", PlaylistVisibility.PUBLIC);
+
+            PlaylistDetailsDto result = playlistService.getPlaylistById(
+                    playlist.getId(), UUID.randomUUID(), new SongFilterDto(), 0, 15
+            );
+
+            assertFalse(result.isOwner());
         }
 
         @Test
@@ -276,7 +323,7 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
             PlaylistException ex = assertThrows(PlaylistException.class,
                     () -> playlistService.addSongToPlaylist(playlistId, songId, otherUserId));
 
-            assertEquals(ErrorType.PLAYLIST_NOT_FOUND, ex.getErrorType());
+            assertEquals(ErrorType.PLAYLIST_NOT_OWNED, ex.getErrorType());
         }
 
         @Test
@@ -301,6 +348,55 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
                     () -> playlistService.removeSongFromPlaylist(playlistId, songId, testUserId));
 
             assertEquals(ErrorType.SONG_NOT_IN_PLAYLIST, ex.getErrorType());
+        }
+
+        @Test
+        void throwsWhenRemovingSongFromPlaylistNotOwned() {
+            Playlist playlist = savedPlaylist("Rock", PlaylistVisibility.PRIVATE);
+            Song song = savedSong();
+            playlistService.addSongToPlaylist(playlist.getId(), song.getId(), testUserId);
+            UUID otherUserId = UUID.randomUUID();
+            Long playlistId = playlist.getId();
+            Long songId = song.getId();
+
+            PlaylistException ex = assertThrows(PlaylistException.class,
+                    () -> playlistService.removeSongFromPlaylist(playlistId, songId, otherUserId));
+
+            assertEquals(ErrorType.PLAYLIST_NOT_OWNED, ex.getErrorType());
+        }
+    }
+
+    @Nested
+    class DeletePlaylist {
+
+        @Test
+        void deletesPlaylistSuccessfully() {
+            Playlist playlist = savedPlaylist("Rock", PlaylistVisibility.PRIVATE);
+            Long playlistId = playlist.getId();
+
+            playlistService.deletePlaylist(playlistId, testUserId);
+
+            assertFalse(playlistRepository.existsById(playlistId));
+        }
+
+        @Test
+        void throwsWhenPlaylistNotFound() {
+            PlaylistException ex = assertThrows(PlaylistException.class,
+                    () -> playlistService.deletePlaylist(999L, testUserId));
+
+            assertEquals(ErrorType.PLAYLIST_NOT_FOUND, ex.getErrorType());
+        }
+
+        @Test
+        void throwsWhenNotOwner() {
+            Playlist playlist = savedPlaylist("Rock", PlaylistVisibility.PRIVATE);
+            UUID otherUserId = UUID.randomUUID();
+            Long playlistId = playlist.getId();
+
+            PlaylistException ex = assertThrows(PlaylistException.class,
+                    () -> playlistService.deletePlaylist(playlistId, otherUserId));
+
+            assertEquals(ErrorType.PLAYLIST_NOT_OWNED, ex.getErrorType());
         }
     }
 
@@ -336,7 +432,7 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
             PlaylistException ex = assertThrows(PlaylistException.class,
                     () -> playlistService.toggleVisibility(playlistId, false, otherUserId));
 
-            assertEquals(ErrorType.PLAYLIST_NOT_FOUND, ex.getErrorType());
+            assertEquals(ErrorType.PLAYLIST_NOT_OWNED, ex.getErrorType());
         }
     }
 
@@ -385,7 +481,7 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
             PlaylistException ex = assertThrows(PlaylistException.class,
                     () -> playlistService.generateShareToken(playlistId, otherUserId));
 
-            assertEquals(ErrorType.PLAYLIST_NOT_FOUND, ex.getErrorType());
+            assertEquals(ErrorType.PLAYLIST_NOT_OWNED, ex.getErrorType());
         }
     }
 
@@ -399,7 +495,7 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
             playlistService.addSongToPlaylist(playlist.getId(), song.getId(), testUserId);
 
             List<SongDto> result = playlistService.searchSongsInPlaylist(
-                    playlist.getId(), "Highway", null, testUserId, 0, 15
+                    playlist.getId(), "Highway", null, 0, 15
             );
 
             assertEquals(1, result.size());
@@ -412,7 +508,7 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
             savedSong();
 
             List<SongDto> result = playlistService.searchSongsInPlaylist(
-                    playlist.getId(), "Highway", null, testUserId, 0, 15
+                    playlist.getId(), "Highway", null, 0, 15
             );
 
             assertTrue(result.isEmpty());
@@ -426,24 +522,35 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
             PlaylistDetailsDto withToken = playlistService.generateShareToken(playlist.getId(), testUserId);
 
             List<SongDto> result = playlistService.searchSongsInPlaylist(
-                    playlist.getId(), "Highway", withToken.getShareToken(), UUID.randomUUID(), 0, 15
+                    playlist.getId(), "Highway", withToken.getShareToken(), 0, 15
             );
 
             assertEquals(1, result.size());
         }
 
         @Test
-        void throwsWhenAccessingPrivatePlaylistWithoutTokenOrOwnership() {
+        void throwsWhenAccessingPrivatePlaylistWithoutToken() {
             Playlist playlist = savedPlaylist("Secret", PlaylistVisibility.PRIVATE);
-            UUID otherUserId = UUID.randomUUID();
             Long playlistId = playlist.getId();
 
             PlaylistException ex = assertThrows(PlaylistException.class,
-                    () -> playlistService.searchSongsInPlaylist(playlistId, "anything", null, otherUserId, 0, 15));
+                    () -> playlistService.searchSongsInPlaylist(playlistId, "anything", null, 0, 15));
+
+            assertEquals(ErrorType.PLAYLIST_NOT_FOUND, ex.getErrorType());
+        }
+
+        @Test
+        void throwsWhenAccessingPrivatePlaylistWithWrongToken() {
+            Playlist playlist = savedPlaylist("Secret", PlaylistVisibility.PRIVATE);
+            Long playlistId = playlist.getId();
+
+            PlaylistException ex = assertThrows(PlaylistException.class,
+                    () -> playlistService.searchSongsInPlaylist(playlistId, "anything", "wrongtoken", 0, 15));
 
             assertEquals(ErrorType.PLAYLIST_NOT_FOUND, ex.getErrorType());
         }
     }
+
     @Nested
     class UpdatePlaylist {
 
@@ -488,7 +595,6 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
 
             CreateOrUpdatePlaylistDto dto = new CreateOrUpdatePlaylistDto();
             dto.setPlaylistName("Taken Name");
-
             Long playlistId = playlist.getId();
 
             PlaylistException ex = assertThrows(PlaylistException.class,
@@ -519,6 +625,57 @@ class PlaylistServiceIT extends AbstractPostgresContainer {
 
             PlaylistException ex = assertThrows(PlaylistException.class,
                     () -> playlistService.updatePlaylist(playlistId, otherUserId, dto));
+
+            assertEquals(ErrorType.PLAYLIST_NOT_OWNED, ex.getErrorType());
+        }
+    }
+
+    @Nested
+    class GetPlaylistByShareToken {
+
+        @Test
+        void returnsPlaylistByShareToken() {
+            Playlist playlist = savedPlaylist("Secret", PlaylistVisibility.PRIVATE);
+            PlaylistDetailsDto withToken = playlistService.generateShareToken(playlist.getId(), testUserId);
+
+            PlaylistDetailsDto result = playlistService.getPlaylistByShareToken(
+                    withToken.getShareToken(), new SongFilterDto(), 0, 15
+            );
+
+            assertEquals("Secret", result.getPlaylistName());
+        }
+
+        @Test
+        void returnsSongsFilteredByShareToken() {
+            Playlist playlist = savedPlaylist("Secret", PlaylistVisibility.PRIVATE);
+            Song song = savedSong();
+            playlistService.addSongToPlaylist(playlist.getId(), song.getId(), testUserId);
+            PlaylistDetailsDto withToken = playlistService.generateShareToken(playlist.getId(), testUserId);
+
+            PlaylistDetailsDto result = playlistService.getPlaylistByShareToken(
+                    withToken.getShareToken(), new SongFilterDto(), 0, 15
+            );
+
+            assertEquals(1, result.getSongDtos().size());
+            assertEquals("Highway Star", result.getSongDtos().getFirst().getSongName());
+        }
+
+        @Test
+        void setsOwnerFalseForUnauthenticatedViewer() {
+            Playlist playlist = savedPlaylist("Secret", PlaylistVisibility.PRIVATE);
+            PlaylistDetailsDto withToken = playlistService.generateShareToken(playlist.getId(), testUserId);
+
+            PlaylistDetailsDto result = playlistService.getPlaylistByShareToken(
+                    withToken.getShareToken(), new SongFilterDto(), 0, 15
+            );
+
+            assertFalse(result.isOwner());
+        }
+
+        @Test
+        void throwsWhenShareTokenNotFound() {
+            PlaylistException ex = assertThrows(PlaylistException.class,
+                    () -> playlistService.getPlaylistByShareToken("invalidtoken", new SongFilterDto(), 0, 15));
 
             assertEquals(ErrorType.PLAYLIST_NOT_FOUND, ex.getErrorType());
         }

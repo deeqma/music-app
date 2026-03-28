@@ -22,6 +22,7 @@ import java.util.UUID;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -55,6 +56,7 @@ class PlaylistControllerTest {
         dto.setPlaylistId(1L);
         dto.setPlaylistName("Rock");
         dto.setSlug("rock");
+        dto.setOwner(true);
         return dto;
     }
 
@@ -66,6 +68,7 @@ class PlaylistControllerTest {
         dto.setSlug("rock");
         dto.setVisibility(PlaylistVisibility.PRIVATE);
         dto.setTotalSongs(0);
+        dto.setOwner(true);
         dto.setSongDtos(List.of());
         return dto;
     }
@@ -73,7 +76,7 @@ class PlaylistControllerTest {
     @Test
     void returnsCreatedOnSuccessfulPlaylistCreation() throws Exception {
         when(playlistService.createPlaylist(any(UUID.class), any(CreateOrUpdatePlaylistDto.class)))
-                .thenReturn(mockPlaylistDetailsDto());
+                .thenReturn(mockPlaylistDto());
 
         mockMvc.perform(post("/api/v0/playlists")
                         .with(mockJwt())
@@ -119,6 +122,7 @@ class PlaylistControllerTest {
                         .with(mockJwt()))
                 .andExpect(status().isOk());
     }
+
     @Test
     void returnsOkOnUpdatePlaylist() throws Exception {
         when(playlistService.updatePlaylist(eq(1L), any(UUID.class), any(CreateOrUpdatePlaylistDto.class)))
@@ -128,12 +132,12 @@ class PlaylistControllerTest {
                         .with(mockJwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {
-                              "playlistName": "Rock Updated",
-                              "description": "Updated description",
-                              "visibility": "PRIVATE"
-                            }
-                            """))
+                                {
+                                  "playlistName": "Rock Updated",
+                                  "description": "Updated description",
+                                  "visibility": "PRIVATE"
+                                }
+                                """))
                 .andExpect(status().isOk());
     }
 
@@ -143,11 +147,11 @@ class PlaylistControllerTest {
                         .with(mockJwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {
-                              "playlistName": "",
-                              "description": "Updated description"
-                            }
-                            """))
+                                {
+                                  "playlistName": "",
+                                  "description": "Updated description"
+                                }
+                                """))
                 .andExpect(status().isBadRequest());
     }
 
@@ -156,12 +160,28 @@ class PlaylistControllerTest {
         mockMvc.perform(put("/api/v0/playlists/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {
-                              "playlistName": "Rock Updated"
-                            }
-                            """))
+                                {
+                                  "playlistName": "Rock Updated"
+                                }
+                                """))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void returnsNoContentOnDeletePlaylist() throws Exception {
+        doNothing().when(playlistService).deletePlaylist(eq(1L), any(UUID.class));
+
+        mockMvc.perform(delete("/api/v0/playlists/1")
+                        .with(mockJwt()))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void returns401WhenNoJwtOnDelete() throws Exception {
+        mockMvc.perform(delete("/api/v0/playlists/1"))
+                .andExpect(status().isUnauthorized());
+    }
+
     @Test
     void returnsOkOnAddSongToPlaylist() throws Exception {
         when(playlistService.addSongToPlaylist(eq(1L), eq(2L), any(UUID.class)))
@@ -184,8 +204,7 @@ class PlaylistControllerTest {
 
     @Test
     void returnsOkOnSearchSongsInPlaylist() throws Exception {
-        when(playlistService.searchSongsInPlaylist(eq(1L), eq("highway"),
-                isNull(), any(UUID.class), eq(0), eq(15)))
+        when(playlistService.searchSongsInPlaylist(eq(1L), eq("highway"), isNull(), eq(0), eq(15)))
                 .thenReturn(List.of());
 
         mockMvc.perform(get("/api/v0/playlists/1/search")
@@ -196,8 +215,7 @@ class PlaylistControllerTest {
 
     @Test
     void returnsOkOnSearchSongsInPlaylistWithShareToken() throws Exception {
-        when(playlistService.searchSongsInPlaylist(eq(1L), eq("highway"),
-                eq("abc12345678"), any(UUID.class), eq(0), eq(15)))
+        when(playlistService.searchSongsInPlaylist(eq(1L), eq("highway"), eq("abc12345678"), eq(0), eq(15)))
                 .thenReturn(List.of());
 
         mockMvc.perform(get("/api/v0/playlists/1/search")
@@ -236,6 +254,26 @@ class PlaylistControllerTest {
         mockMvc.perform(patch("/api/v0/playlists/1/private")
                         .param("value", "false")
                         .with(mockJwt()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void returnsOkOnGetPlaylistByShareToken() throws Exception {
+        when(playlistService.getPlaylistByShareToken(eq("abc12345678"), any(SongFilterDto.class), eq(0), eq(15)))
+                .thenReturn(mockPlaylistDetailsDto());
+
+        mockMvc.perform(get("/api/v0/playlists/share/abc12345678"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void returnsOkOnGetPlaylistByShareTokenWithPagination() throws Exception {
+        when(playlistService.getPlaylistByShareToken(eq("abc12345678"), any(SongFilterDto.class), eq(1), eq(20)))
+                .thenReturn(mockPlaylistDetailsDto());
+
+        mockMvc.perform(get("/api/v0/playlists/share/abc12345678")
+                        .param("page", "1")
+                        .param("pageSize", "20"))
                 .andExpect(status().isOk());
     }
 

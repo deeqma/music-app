@@ -56,7 +56,16 @@ class SongControllerTest {
         return SecurityMockMvcRequestPostProcessors.jwt()
                 .jwt(jwt -> jwt
                         .subject("testuser")
-                        .claim("userId", TEST_USER_ID.toString()));
+                        .claim("userId", TEST_USER_ID.toString())
+                        .claim("role", "USER"));
+    }
+
+    private SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor mockAdminJwt() {
+        return SecurityMockMvcRequestPostProcessors.jwt()
+                .jwt(jwt -> jwt
+                        .subject("adminuser")
+                        .claim("userId", TEST_USER_ID.toString())
+                        .claim("role", "ADMIN"));
     }
 
     @Test
@@ -71,7 +80,7 @@ class SongControllerTest {
                         .param("album", "Machine Head")
                         .param("genre", "Hard Rock")
                         .param("releaseYear", "1972")
-                        .with(mockJwt()))
+                        .with(mockAdminJwt()))
                 .andExpect(status().isCreated());
     }
 
@@ -145,16 +154,31 @@ class SongControllerTest {
                 .thenReturn(SongTestData.highwayStarDto());
 
         mockMvc.perform(put("/api/v1/songs/1")
+                        .with(mockAdminJwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "songName": "Highway Star",
+                                  "artistName": "Deep Purple",
+                                  "releaseYear": 1972
+                                }
+                                """))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void returns403WhenNonAdminTriesToUpdateSong() throws Exception {
+        mockMvc.perform(put("/api/v1/songs/1")
                         .with(mockJwt())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                        {
-                          "songName": "Highway Star",
-                          "artistName": "Deep Purple",
-                          "releaseYear": 1972
-                        }
-                        """))
-                .andExpect(status().isOk());
+                                {
+                                  "songName": "Highway Star",
+                                  "artistName": "Deep Purple",
+                                  "releaseYear": 1972
+                                }
+                                """))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -162,8 +186,15 @@ class SongControllerTest {
         doNothing().when(songService).deleteSong(1L);
 
         mockMvc.perform(delete("/api/v1/songs/1")
-                        .with(mockJwt()))
+                        .with(mockAdminJwt()))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void returns403WhenNonAdminTriesToDeleteSong() throws Exception {
+        mockMvc.perform(delete("/api/v1/songs/1")
+                        .with(mockJwt()))
+                .andExpect(status().isForbidden());
     }
 
     @Test
