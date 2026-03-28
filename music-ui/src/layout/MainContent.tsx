@@ -15,7 +15,7 @@ function usePageLabel(): string {
 export default function MainContent() {
   const label     = usePageLabel()
   const { pathname } = useLocation()
-  const isPlaylist  = pathname.startsWith('/playlist/') || pathname === '/profile'
+  const isPlaylist  = pathname.startsWith('/playlist/') || pathname.startsWith('/share/') || pathname === '/profile'
 
   const [searchQuery, setSearchQuery] = useState('')
 
