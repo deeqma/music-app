@@ -1,9 +1,6 @@
 package io.github.deeqma.music.api;
 
-import io.github.deeqma.music.dto.CreateOrUpdatePlaylistDto;
-import io.github.deeqma.music.dto.PlaylistDto;
-import io.github.deeqma.music.dto.SongDto;
-import io.github.deeqma.music.dto.SongFilterDto;
+import io.github.deeqma.music.dto.*;
 import io.github.deeqma.music.service.PlaylistService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -29,7 +26,7 @@ public class PlaylistController {
     }
 
     @PostMapping
-    public ResponseEntity<PlaylistDto> createPlaylist(
+    public ResponseEntity<PlaylistDetailsDto> createPlaylist(
             @RequestBody @Valid CreateOrUpdatePlaylistDto dto,
             @AuthenticationPrincipal Jwt jwt) {
         UUID userId = extractUserId(jwt);
@@ -43,7 +40,7 @@ public class PlaylistController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PlaylistDto> getPlaylistById(
+    public ResponseEntity<PlaylistDetailsDto> getPlaylistById(
             @PathVariable Long id,
             @ModelAttribute SongFilterDto filterDto,
             @RequestParam(defaultValue = "0") @Min(0) int page,
@@ -53,8 +50,17 @@ public class PlaylistController {
         return ResponseEntity.ok(playlistService.getPlaylistById(id, userId, filterDto, page, pageSize));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<PlaylistDetailsDto> updatePlaylist(
+            @PathVariable Long id,
+            @RequestBody @Valid CreateOrUpdatePlaylistDto dto,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = extractUserId(jwt);
+        return ResponseEntity.ok(playlistService.updatePlaylist(id, userId, dto));
+    }
+
     @PostMapping("/{playlistId}/songs/{songId}")
-    public ResponseEntity<PlaylistDto> addSongToPlaylist(
+    public ResponseEntity<PlaylistDetailsDto> addSongToPlaylist(
             @PathVariable Long playlistId,
             @PathVariable Long songId,
             @AuthenticationPrincipal Jwt jwt) {
@@ -63,7 +69,7 @@ public class PlaylistController {
     }
 
     @DeleteMapping("/{playlistId}/songs/{songId}")
-    public ResponseEntity<PlaylistDto> removeSongFromPlaylist(
+    public ResponseEntity<PlaylistDetailsDto> removeSongFromPlaylist(
             @PathVariable Long playlistId,
             @PathVariable Long songId,
             @AuthenticationPrincipal Jwt jwt) {
@@ -84,7 +90,7 @@ public class PlaylistController {
     }
 
     @PostMapping("/{id}/share")
-    public ResponseEntity<PlaylistDto> generateShareToken(
+    public ResponseEntity<PlaylistDetailsDto> generateShareToken(
             @PathVariable Long id,
             @AuthenticationPrincipal Jwt jwt) {
         UUID userId = extractUserId(jwt);
@@ -92,7 +98,7 @@ public class PlaylistController {
     }
 
     @PatchMapping("/{id}/private")
-    public ResponseEntity<PlaylistDto> toggleVisibility(
+    public ResponseEntity<PlaylistDetailsDto> toggleVisibility(
             @PathVariable Long id,
             @RequestParam boolean value,
             @AuthenticationPrincipal Jwt jwt) {

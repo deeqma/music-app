@@ -134,12 +134,20 @@
   overflow-y: auto;
 }
 
+.sidebar__playlists-header-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 4px;
+}
+
 .sidebar__playlists-header {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   text-align: left;
   color: var(--color-text-secondary);
   font-size: 11px;
@@ -150,6 +158,21 @@
 }
 
 .sidebar__playlists-header:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.sidebar__create-playlist-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  transition: background-color 0.15s;
+}
+
+.sidebar__create-playlist-btn:hover {
   background-color: var(--color-surface-hover);
 }
 

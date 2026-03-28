@@ -2,6 +2,7 @@ package io.github.deeqma.music.api;
 
 import io.github.deeqma.music.config.SecurityConfig;
 import io.github.deeqma.music.dto.CreateOrUpdatePlaylistDto;
+import io.github.deeqma.music.dto.PlaylistDetailsDto;
 import io.github.deeqma.music.dto.PlaylistDto;
 import io.github.deeqma.music.dto.SongFilterDto;
 import io.github.deeqma.music.model.PlaylistVisibility;
@@ -24,7 +25,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 
 @WebMvcTest(controllers = PlaylistController.class)
@@ -54,6 +54,14 @@ class PlaylistControllerTest {
         PlaylistDto dto = new PlaylistDto();
         dto.setPlaylistId(1L);
         dto.setPlaylistName("Rock");
+        dto.setSlug("rock");
+        return dto;
+    }
+
+    private PlaylistDetailsDto mockPlaylistDetailsDto() {
+        PlaylistDetailsDto dto = new PlaylistDetailsDto();
+        dto.setPlaylistId(1L);
+        dto.setPlaylistName("Rock");
         dto.setDescription("Rock songs");
         dto.setSlug("rock");
         dto.setVisibility(PlaylistVisibility.PRIVATE);
@@ -65,7 +73,7 @@ class PlaylistControllerTest {
     @Test
     void returnsCreatedOnSuccessfulPlaylistCreation() throws Exception {
         when(playlistService.createPlaylist(any(UUID.class), any(CreateOrUpdatePlaylistDto.class)))
-                .thenReturn(mockPlaylistDto());
+                .thenReturn(mockPlaylistDetailsDto());
 
         mockMvc.perform(post("/api/v0/playlists")
                         .with(mockJwt())
@@ -93,7 +101,7 @@ class PlaylistControllerTest {
     @Test
     void returnsOkOnGetPlaylistById() throws Exception {
         when(playlistService.getPlaylistById(eq(1L), any(UUID.class), any(SongFilterDto.class), eq(0), eq(15)))
-                .thenReturn(mockPlaylistDto());
+                .thenReturn(mockPlaylistDetailsDto());
 
         mockMvc.perform(get("/api/v0/playlists/1")
                         .with(mockJwt()))
@@ -103,7 +111,7 @@ class PlaylistControllerTest {
     @Test
     void returnsOkOnGetPlaylistByIdWithPagination() throws Exception {
         when(playlistService.getPlaylistById(eq(1L), any(UUID.class), any(SongFilterDto.class), eq(1), eq(20)))
-                .thenReturn(mockPlaylistDto());
+                .thenReturn(mockPlaylistDetailsDto());
 
         mockMvc.perform(get("/api/v0/playlists/1")
                         .param("page", "1")
@@ -111,11 +119,53 @@ class PlaylistControllerTest {
                         .with(mockJwt()))
                 .andExpect(status().isOk());
     }
+    @Test
+    void returnsOkOnUpdatePlaylist() throws Exception {
+        when(playlistService.updatePlaylist(eq(1L), any(UUID.class), any(CreateOrUpdatePlaylistDto.class)))
+                .thenReturn(mockPlaylistDetailsDto());
 
+        mockMvc.perform(put("/api/v0/playlists/1")
+                        .with(mockJwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "playlistName": "Rock Updated",
+                              "description": "Updated description",
+                              "visibility": "PRIVATE"
+                            }
+                            """))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void returns400WhenPlaylistNameIsBlankOnUpdate() throws Exception {
+        mockMvc.perform(put("/api/v0/playlists/1")
+                        .with(mockJwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "playlistName": "",
+                              "description": "Updated description"
+                            }
+                            """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void returns401WhenNoJwtOnUpdate() throws Exception {
+        mockMvc.perform(put("/api/v0/playlists/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                              "playlistName": "Rock Updated"
+                            }
+                            """))
+                .andExpect(status().isUnauthorized());
+    }
     @Test
     void returnsOkOnAddSongToPlaylist() throws Exception {
         when(playlistService.addSongToPlaylist(eq(1L), eq(2L), any(UUID.class)))
-                .thenReturn(mockPlaylistDto());
+                .thenReturn(mockPlaylistDetailsDto());
 
         mockMvc.perform(post("/api/v0/playlists/1/songs/2")
                         .with(mockJwt()))
@@ -125,13 +175,12 @@ class PlaylistControllerTest {
     @Test
     void returnsOkOnRemoveSongFromPlaylist() throws Exception {
         when(playlistService.removeSongFromPlaylist(eq(1L), eq(2L), any(UUID.class)))
-                .thenReturn(mockPlaylistDto());
+                .thenReturn(mockPlaylistDetailsDto());
 
         mockMvc.perform(delete("/api/v0/playlists/1/songs/2")
                         .with(mockJwt()))
                 .andExpect(status().isOk());
     }
-
 
     @Test
     void returnsOkOnSearchSongsInPlaylist() throws Exception {
@@ -161,7 +210,7 @@ class PlaylistControllerTest {
     @Test
     void returnsOkOnGenerateShareToken() throws Exception {
         when(playlistService.generateShareToken(eq(1L), any(UUID.class)))
-                .thenReturn(mockPlaylistDto());
+                .thenReturn(mockPlaylistDetailsDto());
 
         mockMvc.perform(post("/api/v0/playlists/1/share")
                         .with(mockJwt()))
@@ -171,7 +220,7 @@ class PlaylistControllerTest {
     @Test
     void returnsOkOnToggleVisibilityToPrivate() throws Exception {
         when(playlistService.toggleVisibility(eq(1L), eq(true), any(UUID.class)))
-                .thenReturn(mockPlaylistDto());
+                .thenReturn(mockPlaylistDetailsDto());
 
         mockMvc.perform(patch("/api/v0/playlists/1/private")
                         .param("value", "true")
@@ -182,7 +231,7 @@ class PlaylistControllerTest {
     @Test
     void returnsOkOnToggleVisibilityToPublic() throws Exception {
         when(playlistService.toggleVisibility(eq(1L), eq(false), any(UUID.class)))
-                .thenReturn(mockPlaylistDto());
+                .thenReturn(mockPlaylistDetailsDto());
 
         mockMvc.perform(patch("/api/v0/playlists/1/private")
                         .param("value", "false")
