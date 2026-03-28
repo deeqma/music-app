@@ -71,6 +71,21 @@ public class SongService {
         return fetchSongs(spec, userId, page, pageSize);
     }
 
+    public List<SongDto> searchLikedSongs(String query, UUID userId, int page, int pageSize) {
+        log.info("searchLikedSongs: searching liked songs for user {} with query '{}'", userId, query);
+
+        Set<Long> likedSongIds = likedSongRepository.findSongIdsByUserId(userId);
+
+        if (likedSongIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        Specification<Song> spec = SongSpecification.search(query)
+                .and((root, _, _) -> root.get("id").in(likedSongIds));
+
+        return fetchSongs(spec, userId, page, pageSize);
+    }
+
     @Transactional
     public String toggleLike(Long songId, UUID userId) {
 
