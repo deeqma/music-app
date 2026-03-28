@@ -345,4 +345,47 @@ public class PlaylistService {
         return dto;
     }
 
+
+    // public, anyone can view
+    @Transactional(readOnly = true)
+    public PlaylistDetailsDto getPlaylistByShareToken(String shareToken, SongFilterDto filterDto, int page, int pageSize) {
+
+        log.info("getPlaylistByShareToken: fetching playlist by share token");
+
+        Playlist playlist = playlistRepository.findByShareToken(shareToken).orElseThrow(
+                () -> new PlaylistException(ErrorType.PLAYLIST_NOT_FOUND, "Playlist not found")
+        );
+
+        Set<Long> songIds = playlist.getSongs().stream()
+                .map(Song::getId)
+                .collect(Collectors.toSet());
+
+        if (songIds.isEmpty()) {
+            PlaylistDetailsDto dto = toDetailsDto(playlist, null);
+            dto.setSongDtos(new ArrayList<>());
+            dto.setTotalDurationSeconds(0);
+            return dto;
+        }
+
+        Specification<Song> inPlaylist = (root, _, _) -> root.get("id").in(songIds);
+        Specification<Song> spec = SongSpecification.filter(filterDto).and(inPlaylist);
+
+        List<Song> songs = songRepository.findAll(spec, PageRequest.of(page, pageSize)).getContent();
+
+        int totalDurationSeconds = songs.stream()
+                .mapToInt(Song::getDurationSeconds)
+                .sum();
+
+        List<SongDto> songDtos = songs.stream()
+                .map(songService::toDto)
+                .toList();
+
+        PlaylistDetailsDto dto = toDetailsDto(playlist, null);
+        dto.setSongDtos(songDtos);
+        dto.setTotalDurationSeconds(totalDurationSeconds);
+
+        log.info("getPlaylistByShareToken: returning playlist ID {}", playlist.getId());
+        return dto;
+    }
+
 }

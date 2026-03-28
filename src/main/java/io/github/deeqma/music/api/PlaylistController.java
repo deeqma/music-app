@@ -115,4 +115,14 @@ public class PlaylistController {
         return ResponseEntity.ok(playlistService.toggleVisibility(id, value, userId));
     }
 
+
+    // public
+    @GetMapping("/share/{shareToken}")
+    public ResponseEntity<PlaylistDetailsDto> getPlaylistByShareToken(
+            @PathVariable String shareToken,
+            @ModelAttribute SongFilterDto filterDto,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "15") @Min(1) int pageSize) {
+        return ResponseEntity.ok(playlistService.getPlaylistByShareToken(shareToken, filterDto, page, pageSize));
+    }
 }
