@@ -1,8 +1,8 @@
 import { useRef, useEffect, useState } from 'react'
-import type { PlaylistDto } from '../mock/types'
+import type { PlaylistSummaryDto } from '../auth/contracts'
 
 interface PlaylistDropdownProps {
-  readonly playlists: readonly PlaylistDto[]
+  readonly playlists: readonly PlaylistSummaryDto[]
   readonly onSelect:  (playlistId: number) => void
 }
 

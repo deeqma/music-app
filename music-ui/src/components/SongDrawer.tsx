@@ -1,35 +1,58 @@
 import { useRef, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation } from 'react-router-dom'
-import type { SongDto } from '../auth/contracts'
+import type { SongDto, PlaylistSummaryDto } from '../auth/contracts'
 import { songApi } from '../auth/songApi'
 import Icon from './Icon'
 import musicRaw from '../assets/music.svg?raw'
 import xRaw     from '../assets/x.svg?raw'
+import { playlistApi } from '../auth/playlistApi'
 import { usePlaylistsStore } from '../store/playlistsStore'
 import PlaylistDropdown from './PlaylistDropdown'
+import EditSongModal from './EditSongModal'
+import { isAdmin } from '../auth/authToken'
 
 interface SongDrawerProps {
-  readonly song:      SongDto
-  readonly onClose:   () => void
-  readonly onDelete?: (id: number) => void
+  readonly song:                   SongDto
+  readonly onClose:                () => void
+  readonly onDelete?:              (id: number) => void
+  readonly onRemovedFromPlaylist?: (id: number) => void
+  readonly onSongUpdated?:         (song: SongDto) => void
+  readonly readOnly?:              boolean
 }
 
-export default function SongDrawer({ song, onClose, onDelete }: SongDrawerProps) {
+export default function SongDrawer({ song, onClose, onDelete, onRemovedFromPlaylist, onSongUpdated, readOnly }: SongDrawerProps) {
   const drawerRef   = useRef<HTMLDivElement>(null)
   const addTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const [addedMsg,    setAddedMsg]    = useState('')
   const [deleting,    setDeleting]    = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [removing,    setRemoving]    = useState(false)
+  const [editOpen,    setEditOpen]    = useState(false)
+
+  // Fresh playlist list fetched on drawer open
+  const [allPlaylists,     setAllPlaylists]     = useState<PlaylistSummaryDto[]>([])
+  const [playlistsLoading, setPlaylistsLoading] = useState(true)
 
   const { pathname } = useLocation()
   const isPlaylistPage = pathname.startsWith('/playlist/')
   const currentSlug    = isPlaylistPage ? pathname.replace('/playlist/', '') : null
 
-  const { playlists, addSongToPlaylist, removeSongFromPlaylist } = usePlaylistsStore()
-  const currentPlaylist = playlists.find(p => p.slug === currentSlug) ?? null
+  // Still need slug→id lookup for remove; use store summaries (already loaded)
+  const { playlists: storePlaylists } = usePlaylistsStore()
+  const currentPlaylist = storePlaylists.find(p => p.slug === currentSlug) ?? null
 
-  const availablePlaylists = playlists.filter(p => !p.songDtos.some(s => s.id === song.id))
+  // Fetch all playlists fresh when drawer opens
+  useEffect(() => {
+    playlistApi.getAll()
+      .then(list => {
+        // Exclude the playlist this song is already being viewed in
+        setAllPlaylists(list.filter(p => p.owner && p.playlistId !== currentPlaylist?.playlistId))
+      })
+      .catch(() => setAllPlaylists([]))
+      .finally(() => setPlaylistsLoading(false))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -51,20 +74,29 @@ export default function SongDrawer({ song, onClose, onDelete }: SongDrawerProps)
     }
   }, [onClose])
 
-  function handleAddToPlaylist(playlistId: number) {
-    const pl = playlists.find(p => p.playlistId === playlistId)
+  async function handleAddToPlaylist(playlistId: number) {
+    const pl = allPlaylists.find(p => p.playlistId === playlistId)
     if (!pl) return
-    addSongToPlaylist(playlistId, song)
-    const msg = `Added to ${pl.playlistName}`
-    setAddedMsg(msg)
+    try {
+      await playlistApi.addSong(playlistId, song.id)
+      setAddedMsg(`Added to ${pl.playlistName}`)
+    } catch {
+      setAddedMsg('Failed to add')
+    }
     if (addTimerRef.current) clearTimeout(addTimerRef.current)
     addTimerRef.current = setTimeout(() => setAddedMsg(''), 2000)
   }
 
-  function handleRemoveFromPlaylist() {
-    if (!currentPlaylist) return
-    removeSongFromPlaylist(currentPlaylist.playlistId, song.id)
-    onClose()
+  async function handleRemoveFromPlaylist() {
+    if (!currentPlaylist || removing) return
+    setRemoving(true)
+    try {
+      await playlistApi.removeSong(currentPlaylist.playlistId, song.id)
+      onRemovedFromPlaylist?.(song.id)
+      onClose()
+    } catch {
+      setRemoving(false)
+    }
   }
 
   async function handleDelete() {
@@ -80,10 +112,18 @@ export default function SongDrawer({ song, onClose, onDelete }: SongDrawerProps)
     }
   }
 
-  const mountEl = document.querySelector('.main-content__body-wrapper')
-  if (!mountEl) return null
+  const mountEl = document.querySelector('.main-content__body-wrapper') ?? document.body
 
-  return createPortal(
+  return (
+    <>
+      {editOpen && (
+        <EditSongModal
+          song={song}
+          onSaved={updated => { onSongUpdated?.(updated); setEditOpen(false) }}
+          onClose={() => setEditOpen(false)}
+        />
+      )}
+      {createPortal(
     <div ref={drawerRef} className="song-drawer">
       <button className="song-drawer__close" onClick={onClose} aria-label="Close">
         <Icon src={xRaw} size={16} color="secondary" alt="close" />
@@ -113,39 +153,54 @@ export default function SongDrawer({ song, onClose, onDelete }: SongDrawerProps)
         </div>
       </div>
 
-      {/* Add to playlist */}
-      <div className="song-drawer__section">
-        <span className="song-drawer__section-label">Add to playlist</span>
-        {availablePlaylists.length > 0 ? (
-          <PlaylistDropdown playlists={availablePlaylists} onSelect={handleAddToPlaylist} />
-        ) : (
-          <span className="song-drawer__section-note">Song is in all playlists</span>
-        )}
-        {addedMsg && <span className="song-drawer__added-msg">{addedMsg}</span>}
-      </div>
+      {/* Add to playlist — hidden in read-only mode */}
+      {!readOnly && (
+        <div className="song-drawer__section">
+          <span className="song-drawer__section-label">Add to playlist</span>
+          {playlistsLoading ? (
+            <span className="song-drawer__section-note">Loading…</span>
+          ) : allPlaylists.length > 0 ? (
+            <PlaylistDropdown playlists={allPlaylists} onSelect={handleAddToPlaylist} />
+          ) : (
+            <span className="song-drawer__section-note">No playlists available</span>
+          )}
+          {addedMsg && <span className="song-drawer__added-msg">{addedMsg}</span>}
+        </div>
+      )}
 
-      {/* Remove from playlist — only on playlist pages */}
-      {isPlaylistPage && currentPlaylist && (
+      {/* Remove from playlist — only on playlist pages, not in read-only mode */}
+      {!readOnly && isPlaylistPage && currentPlaylist && (
         <button
           className="song-drawer__btn song-drawer__btn--remove"
           onClick={handleRemoveFromPlaylist}
+          disabled={removing}
         >
-          Remove from {currentPlaylist.playlistName}
+          {removing ? 'Removing…' : `Remove from ${currentPlaylist.playlistName}`}
         </button>
       )}
 
-      <div className="song-drawer__actions">
-        <button className="song-drawer__btn song-drawer__btn--edit">Edit</button>
-        <button
-          className="song-drawer__btn song-drawer__btn--delete"
-          onClick={handleDelete}
-          disabled={deleting}
-        >
-          {deleting ? 'Deleting…' : 'Delete'}
-        </button>
-      </div>
+      {!readOnly && isAdmin() && (
+        <div className="song-drawer__actions">
+          <button
+            className="song-drawer__btn song-drawer__btn--edit"
+            onClick={() => setEditOpen(true)}
+          >
+            Edit
+          </button>
+          <button
+            className="song-drawer__btn song-drawer__btn--delete"
+            onClick={handleDelete}
+            disabled={deleting}
+          >
+            {deleting ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
+      )}
+
       {deleteError && <p className="song-drawer__error">{deleteError}</p>}
     </div>,
     mountEl
+  )}
+    </>
   )
 }

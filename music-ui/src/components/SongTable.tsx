@@ -4,11 +4,15 @@ import type { SongDto } from '../auth/contracts'
 import PlayPauseButton from './PlayPauseButton'
 import HeartButton from './HeartButton'
 import SongDrawer from './SongDrawer'
+import LoginPromptModal from './LoginPromptModal'
 import { usePlayerStore } from '../store/playerStore'
 
 interface SongTableProps {
-  readonly songs:          readonly SongDto[]
-  readonly onSongDeleted?: (id: number) => void
+  readonly songs:                       readonly SongDto[]
+  readonly onSongDeleted?:              (id: number) => void
+  readonly onSongRemovedFromPlaylist?:  (id: number) => void
+  readonly onSongUpdated?:             (song: SongDto) => void
+  readonly readOnly?:                  boolean
 }
 
 function formatDuration(seconds: number): string {
@@ -17,8 +21,9 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-export default function SongTable({ songs, onSongDeleted }: SongTableProps) {
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+export default function SongTable({ songs, onSongDeleted, onSongRemovedFromPlaylist, onSongUpdated, readOnly }: SongTableProps) {
+  const [selectedId,     setSelectedId]     = useState<number | null>(null)
+  const [loginPromptOpen, setLoginPromptOpen] = useState(false)
   const location = useLocation()
 
   const { currentSong, isPlaying, likedIds, sourceRoute, playSong, setIsPlaying, toggleLike } = usePlayerStore()
@@ -48,8 +53,17 @@ export default function SongTable({ songs, onSongDeleted }: SongTableProps) {
 
   return (
     <>
+      {loginPromptOpen && <LoginPromptModal onClose={() => setLoginPromptOpen(false)} />}
+
       {selectedSong && (
-        <SongDrawer song={selectedSong} onClose={() => setSelectedId(null)} onDelete={onSongDeleted} />
+        <SongDrawer
+          song={selectedSong}
+          onClose={() => setSelectedId(null)}
+          onDelete={onSongDeleted}
+          onRemovedFromPlaylist={onSongRemovedFromPlaylist}
+          onSongUpdated={onSongUpdated}
+          readOnly={readOnly}
+        />
       )}
 
       <table className="song-table">
@@ -100,7 +114,7 @@ export default function SongTable({ songs, onSongDeleted }: SongTableProps) {
                 <td className="song-table__col-liked" onClick={e => e.stopPropagation()}>
                   <HeartButton
                     liked={isLiked}
-                    onToggle={() => toggleLike(song.id)}
+                    onToggle={readOnly ? () => setLoginPromptOpen(true) : () => toggleLike(song.id)}
                   />
                 </td>
 
