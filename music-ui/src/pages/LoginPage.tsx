@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, Navigate } from 'react-router-dom'
 import { authApi } from '../auth/authApi'
-import { saveToken } from '../auth/authToken'
+import { saveToken, getToken } from '../auth/authToken'
 import type { ErrorResponse } from '../auth/contracts'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  if (getToken()) return <Navigate to="/explore" replace />
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error,    setError]    = useState('')
@@ -17,6 +18,10 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const { accessToken } = await authApi.login({ username, password })
+      if (!accessToken) {
+        setError('No access token received. Please try again.')
+        return
+      }
       saveToken(accessToken)
       navigate('/explore', { replace: true })
     } catch (err) {

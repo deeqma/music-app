@@ -99,6 +99,10 @@ export default function ExplorePage() {
     setSongs(prev => prev.filter(s => s.id !== id))
   }
 
+  function handleSongUpdated(song: SongDto) {
+    setSongs(prev => prev.map(s => s.id === song.id ? song : s))
+  }
+
   const active = isFilterActive(filter)
 
   return (
@@ -129,7 +133,7 @@ export default function ExplorePage() {
         <FilterPanel filter={filter} onChange={setFilter} />
       )}
 
-      <SongTable songs={songs} onSongDeleted={handleSongDeleted} />
+      <SongTable songs={songs} onSongDeleted={handleSongDeleted} onSongUpdated={handleSongUpdated} />
       <div ref={sentinelRef} style={{ height: 1 }} />
       {loading && <p className="songs-status">Loading…</p>}
       {!hasMore && songs.length > 0 && (

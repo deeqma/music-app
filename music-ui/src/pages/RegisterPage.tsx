@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi } from '../auth/authApi'
-import { saveToken } from '../auth/authToken'
-import type { ErrorResponse } from '../auth/contracts'
+import { clearToken } from '../auth/authToken'
+import type { ErrorResponse, UserRole } from '../auth/contracts'
+
+const ROLES: UserRole[] = ['USER', 'MODERATOR', 'ADMIN']
 
 export default function RegisterPage() {
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [role,     setRole]     = useState<UserRole>('USER')
   const [error,    setError]    = useState('')
   const [loading,  setLoading]  = useState(false)
 
@@ -16,10 +19,10 @@ export default function RegisterPage() {
     setError('')
     setLoading(true)
     try {
-      await authApi.register({ username, password })
-      const { accessToken } = await authApi.login({ username, password })
-      saveToken(accessToken)
-      navigate('/explore', { replace: true })
+      await authApi.register({ username, password, role })
+      // Clear any existing session — user must log in fresh
+      clearToken()
+      navigate('/login', { replace: true })
     } catch (err) {
       const e = err as ErrorResponse
       setError(e.message ?? 'Registration failed. Please try again.')
@@ -61,6 +64,22 @@ export default function RegisterPage() {
               autoComplete="new-password"
               required
             />
+          </div>
+
+          <div className="auth-page__field">
+            <label className="auth-page__label">Role</label>
+            <div className="auth-page__role-group">
+              {ROLES.map(r => (
+                <button
+                  key={r}
+                  type="button"
+                  className={`auth-page__role-btn${role === r ? ' auth-page__role-btn--active' : ''}`}
+                  onClick={() => setRole(r)}
+                >
+                  {r.charAt(0) + r.slice(1).toLowerCase()}
+                </button>
+              ))}
+            </div>
           </div>
 
           {error && <p className="auth-page__error">{error}</p>}

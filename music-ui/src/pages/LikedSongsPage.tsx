@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import type { SongDto } from '../auth/contracts'
 import { songApi } from '../auth/songApi'
 import { usePlayerStore } from '../store/playerStore'
@@ -12,10 +13,14 @@ import type { FilterState } from '../lib/filterUtils'
 const PAGE_SIZE = 15
 
 export default function LikedSongsPage() {
+  const { searchQuery } = useOutletContext<{ searchQuery: string }>()
+
   const [allLoaded, setAllLoaded] = useState<SongDto[]>([])
   const [page,      setPage]      = useState(0)
   const [hasMore,   setHasMore]   = useState(true)
   const [loading,   setLoading]   = useState(false)
+
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery)
 
   const [filterOpen,      setFilterOpen]      = useState(false)
   const [filter,          setFilter]          = useState<FilterState>(DEFAULT_FILTER)
@@ -24,6 +29,7 @@ export default function LikedSongsPage() {
   const loadingRef  = useRef(false)
   const pageRef     = useRef(0)
   const hasMoreRef  = useRef(true)
+  const queryRef    = useRef('')
   const filterRef   = useRef<FilterState>(DEFAULT_FILTER)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
@@ -33,23 +39,33 @@ export default function LikedSongsPage() {
   pageRef.current    = page
   hasMoreRef.current = hasMore
 
-  // Debounce filter changes — 300ms
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 300)
+    return () => clearTimeout(t)
+  }, [searchQuery])
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedFilter(filter), 300)
     return () => clearTimeout(t)
   }, [filter])
 
+  queryRef.current  = debouncedQuery
   filterRef.current = debouncedFilter
 
   // Only show songs that are still liked — unlike removes them instantly
   const songs = allLoaded.filter(s => likedIds.has(s.id))
 
-  async function loadPage(p: number, f: FilterState, reset = false) {
+  async function loadPage(p: number, q: string, f: FilterState, reset = false) {
     if (loadingRef.current) return
     loadingRef.current = true
     setLoading(true)
     try {
-      const data = await songApi.getLiked({ ...f, page: p, pageSize: PAGE_SIZE })
+      let data: SongDto[]
+      if (q) {
+        data = await songApi.searchLiked(q, p, PAGE_SIZE)
+      } else {
+        data = await songApi.getLiked({ ...f, page: p, pageSize: PAGE_SIZE })
+      }
       mergeLikedSongs(data)
       if (data.length < PAGE_SIZE) setHasMore(false)
       setAllLoaded(prev => reset ? data : [...prev, ...data])
@@ -62,21 +78,19 @@ export default function LikedSongsPage() {
     }
   }
 
-  // Reset and reload from page 0 when filter changes
   useEffect(() => {
     setAllLoaded([])
     setPage(0)
     setHasMore(true)
-    loadPage(0, debouncedFilter, true)
-  }, [debouncedFilter]) // eslint-disable-line react-hooks/exhaustive-deps
+    loadPage(0, debouncedQuery, debouncedFilter, true)
+  }, [debouncedQuery, debouncedFilter]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // IntersectionObserver — set up once
   useEffect(() => {
     const el = sentinelRef.current
     if (!el) return
     const obs = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting && hasMoreRef.current && !loadingRef.current) {
-        loadPage(pageRef.current, filterRef.current)
+        loadPage(pageRef.current, queryRef.current, filterRef.current)
       }
     }, { rootMargin: '200px' })
     obs.observe(el)
@@ -113,7 +127,10 @@ export default function LikedSongsPage() {
         <FilterPanel filter={filter} onChange={setFilter} />
       )}
 
-      <SongTable songs={songs} />
+      <SongTable
+        songs={songs}
+        onSongUpdated={song => setAllLoaded(prev => prev.map(s => s.id === song.id ? song : s))}
+      />
       <div ref={sentinelRef} style={{ height: 1 }} />
       {loading && <p className="songs-status">Loading…</p>}
       {!hasMore && songs.length > 0 && (
