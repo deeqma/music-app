@@ -13,6 +13,7 @@ import vol2Raw    from './assets/volume-2.svg?raw'
 import vol3Raw    from './assets/volume-3.svg?raw'
 import { usePlayerStore } from './store/playerStore'
 import { usePlaylistsStore } from './store/playlistsStore'
+import { songApi } from './auth/songApi'
 
 function getSourceLabel(route: string, playlists: { slug: string; playlistName: string }[]): string {
   if (route === '/explore')      return 'Explore'
@@ -31,9 +32,27 @@ function formatTime(s: number): string {
   return `${m}:${sec.toString().padStart(2, '0')}`
 }
 
+/** Compute which song comes next given current state */
+function resolveNextSong(
+  currentId: number,
+  queue: { id: number }[],
+  shuffle: boolean,
+): number | null {
+  if (queue.length === 0) return null
+  if (shuffle) {
+    const others = queue.filter(s => s.id !== currentId)
+    return others.length > 0 ? others[0].id : queue[0].id
+  }
+  const idx = queue.findIndex(s => s.id === currentId)
+  if (idx === -1) return null
+  return queue[(idx + 1) % queue.length].id
+}
+
 export default function AudioContainer() {
   const audioRef    = useRef<HTMLAudioElement>(null)
-  const isSeekingRef = useRef(false)
+  const preloadRef  = useRef<HTMLAudioElement>(null)
+  const isSeekingRef   = useRef(false)
+  const preloadedIdRef = useRef<number | null>(null)
 
   const [currentTime, setCurrentTime] = useState(0)
   const [duration,    setDuration]    = useState(0)
@@ -45,10 +64,27 @@ export default function AudioContainer() {
   const playlists = usePlaylistsStore(s => s.playlists)
 
   const {
-    currentSong, isPlaying, likedIds, shuffle, repeatMode, sourceRoute,
+    currentSong, queue, isPlaying, likedIds, shuffle, repeatMode, sourceRoute,
     setIsPlaying, toggleLike, playNext, playPrev,
     toggleShuffle, toggleRepeat,
   } = usePlayerStore()
+
+  const isLiked = currentSong ? likedIds.has(currentSong.id) : false
+
+  // Spacebar toggles play/pause
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (!currentSong) return
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (e.code === 'Space') {
+        e.preventDefault()
+        setIsPlaying(!isPlaying)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [currentSong, isPlaying, setIsPlaying])
 
   function handleSongNameClick() {
     if (!currentSong || !sourceRoute) return
@@ -60,35 +96,64 @@ export default function AudioContainer() {
     }
   }
 
-  const isLiked = currentSong ? likedIds.has(currentSong.id) : false
+  // Load + play when song changes
 
-  // Reset timers when audio unloads a track (fires on load())
-  function handleEmptied() {
-    setCurrentTime(0)
-    setDuration(0)
-  }
-
-  // Load + auto-play when currentSong changes
   useEffect(() => {
     const audio = audioRef.current
-    if (!audio || !currentSong) return
-    audio.src = currentSong.filePath
+    if (!audio) return
+    if (!currentSong) {
+      audio.pause()
+      audio.src = ''
+      return
+    }
+
+    audio.src  = songApi.streamUrl(currentSong.id)
+    audio.loop = repeatMode === 'one'
     audio.load()
     audio.play().catch(() => {})
-  }, [currentSong?.id])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentSong?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync play/pause state
+  // Sync loop flag when repeatMode changes
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.loop = repeatMode === 'one'
+  }, [repeatMode])
+
+  // Preload next song (hold up to 2 at a time)
+
+  useEffect(() => {
+    const preload = preloadRef.current
+    if (!preload || !currentSong || repeatMode === 'one') return
+
+    const nextId = resolveNextSong(currentSong.id, queue, shuffle)
+    if (nextId === null || nextId === currentSong.id) return
+    if (nextId === preloadedIdRef.current) return
+
+    preload.src            = songApi.streamUrl(nextId)
+    preload.preload        = 'auto'
+    preloadedIdRef.current = nextId
+    preload.load()
+  }, [currentSong?.id, queue, shuffle, repeatMode]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync play/pause
+
   useEffect(() => {
     const audio = audioRef.current
     if (!audio || !currentSong) return
     if (isPlaying) audio.play().catch(() => {})
     else           audio.pause()
-  }, [isPlaying])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isPlaying]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Audio event handlers
 
+  function handleEmptied() {
+    setCurrentTime(0)
+    setDuration(0)
+  }
+
   function handleTimeUpdate() {
-    // Skip state update while the user is dragging the seek bar
     if (!isSeekingRef.current && audioRef.current) {
       setCurrentTime(audioRef.current.currentTime)
     }
@@ -99,17 +164,15 @@ export default function AudioContainer() {
   }
 
   function handleEnded() {
-    if (repeatMode === 'one' && audioRef.current) {
-      audioRef.current.currentTime = 0
-      audioRef.current.play().catch(() => {})
-    } else if (repeatMode === 'all' || shuffle) {
+    // repeat-one uses audio.loop so this won't fire in that mode
+    if (repeatMode === 'all' || shuffle) {
       playNext()
     } else {
       setIsPlaying(false)
     }
   }
 
-  // Seek bar — smooth drag
+  // Seek bar
 
   function handleSeekStart() {
     isSeekingRef.current = true
@@ -148,17 +211,17 @@ export default function AudioContainer() {
 
   // Derived values
 
-  const seekPct   = duration > 0 ? (currentTime / duration) * 100 : 0
-  const volPct    = volume * 100
-  const remaining = duration > currentTime ? duration - currentTime : 0
-  const volIcon   = volume === 0 ? vol0Raw : volume > 0.5 ? vol3Raw : vol2Raw
-
+  const seekPct      = duration > 0 ? (currentTime / duration) * 100 : 0
+  const volPct       = volume * 100
+  const remaining    = duration > currentTime ? duration - currentTime : 0
+  const volIcon      = volume === 0 ? vol0Raw : volume > 0.5 ? vol3Raw : vol2Raw
   const repeatActive = repeatMode !== 'off'
   const seekBg = `linear-gradient(to right, var(--color-accent) ${seekPct}%, var(--color-border) ${seekPct}%)`
   const volBg  = `linear-gradient(to right, var(--color-accent) ${volPct}%, var(--color-border) ${volPct}%)`
 
   return (
     <div className="audio-container">
+      {/* Primary playback element */}
       <audio
         ref={audioRef}
         onTimeUpdate={handleTimeUpdate}
@@ -166,6 +229,8 @@ export default function AudioContainer() {
         onEmptied={handleEmptied}
         onEnded={handleEnded}
       />
+      {/* Hidden preload element for next song */}
+      <audio ref={preloadRef} preload="auto" style={{ display: 'none' }} />
 
       {/* Left: heart + song info */}
       <div className="audio-container__left">

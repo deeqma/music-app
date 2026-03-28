@@ -78,9 +78,7 @@ export const songApi = {
   },
 
   streamUrl(id: number): string {
-    const token = localStorage.getItem('access_token')
-    const query = token ? `?access_token=${encodeURIComponent(token)}` : ''
-    return `${BASE_URL}/api/v1/songs/${id}/stream${query}`
+    return `${BASE_URL}/api/v1/songs/${id}/stream`
   },
 
 }
