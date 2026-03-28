@@ -12,15 +12,25 @@ export interface SongDto {
   durationSeconds: number
 }
 
-export interface PlaylistDto {
-  playlistId: number
+// Lightweight returned by GET /api/v0/playlists
+export interface PlaylistSummaryDto {
+  playlistId:   number
   playlistName: string
-  description: string | null
-  slug: string
-  visibility: 'PUBLIC' | 'PRIVATE'
-  shareToken: string | null
-  totalSongs: number
-  songDtos: SongDto[]
+  slug:         string
+  owner:        boolean
+}
+
+// Full details returned by GET /api/v0/playlists/{id} and mutating endpoints
+export interface PlaylistDetailsDto {
+  playlistId:   number
+  playlistName: string
+  description:  string | null
+  slug:         string
+  visibility:   'PUBLIC' | 'PRIVATE'
+  shareToken:   string | null
+  totalSongs:          number
+  totalDurationSeconds: number
+  songDtos:            SongDto[]
 }
 
 export interface SongFilterParams {
@@ -48,6 +58,14 @@ export interface CreatePlaylistParams {
   visibility?: 'PUBLIC' | 'PRIVATE'
 }
 
+export interface UserProfileDto {
+  userId:          string
+  username:        string
+  totalLikedSongs: number
+  totalPlaylists:  number
+  playlistLimit:   number
+}
+
 export interface ErrorResponse {
   errorType: string | null
   status: number
@@ -55,9 +73,12 @@ export interface ErrorResponse {
   message: string
 }
 
+export type UserRole = 'USER' | 'MODERATOR' | 'ADMIN'
+
 export interface RegisterParams {
   username: string
   password: string
+  role?:    UserRole
 }
 
 export interface LoginParams {

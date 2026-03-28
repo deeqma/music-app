@@ -23,6 +23,12 @@ export const songApi = {
     )
   },
 
+  searchLiked(query: string, page = 0, pageSize = 15): Promise<SongDto[]> {
+    return http<SongDto[]>(
+      `/api/v1/songs/liked/search?query=${encodeURIComponent(query)}&page=${page}&pageSize=${pageSize}`
+    )
+  },
+
   getLiked(params: SongFilterParams = {}): Promise<SongDto[]> {
     const query = new URLSearchParams()
     if (params.genre)                  query.set('genre',      params.genre)

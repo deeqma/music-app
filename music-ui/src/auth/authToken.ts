@@ -1,9 +1,11 @@
 export interface TokenPayload {
   sub:    string
   userId: string
+  role:   string
+  scope:  string[]
+  iss:    string
   exp:    number
   iat:    number
-  scope:  string[]
 }
 
 export function getTokenPayload(): TokenPayload | null {
@@ -14,6 +16,10 @@ export function getTokenPayload(): TokenPayload | null {
   } catch {
     return null
   }
+}
+
+export function isAdmin(): boolean {
+  return getTokenPayload()?.role === 'ADMIN'
 }
 
 function isTokenExpired(token: string): boolean {

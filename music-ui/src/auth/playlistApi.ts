@@ -1,20 +1,27 @@
-import type { PlaylistDto, SongDto, SongFilterParams, CreatePlaylistParams } from './contracts'
+import type { PlaylistSummaryDto, PlaylistDetailsDto, SongDto, SongFilterParams, CreatePlaylistParams } from './contracts'
 import { http } from './httpClient'
 
 export const playlistApi = {
 
-  create(params: CreatePlaylistParams): Promise<PlaylistDto> {
-    return http<PlaylistDto>('/api/v0/playlists', {
+  create(params: CreatePlaylistParams): Promise<PlaylistSummaryDto> {
+    return http<PlaylistSummaryDto>('/api/v0/playlists', {
       method: 'POST',
       body: JSON.stringify(params),
     })
   },
 
-  getAll(): Promise<PlaylistDto[]> {
-    return http<PlaylistDto[]>('/api/v0/playlists')
+  update(id: number, params: CreatePlaylistParams): Promise<PlaylistDetailsDto> {
+    return http<PlaylistDetailsDto>(`/api/v0/playlists/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(params),
+    })
   },
 
-  getById(id: number, params: SongFilterParams = {}): Promise<PlaylistDto> {
+  getAll(): Promise<PlaylistSummaryDto[]> {
+    return http<PlaylistSummaryDto[]>('/api/v0/playlists')
+  },
+
+  getById(id: number, params: SongFilterParams = {}): Promise<PlaylistDetailsDto> {
     const query = new URLSearchParams()
     if (params.genre)                  query.set('genre',      params.genre)
     if (params.artistName)             query.set('artistName', params.artistName)
@@ -24,17 +31,17 @@ export const playlistApi = {
     if (params.page !== undefined)     query.set('page',       String(params.page))
     if (params.pageSize !== undefined) query.set('pageSize',   String(params.pageSize))
     const qs = query.toString()
-    return http<PlaylistDto>(`/api/v0/playlists/${id}${qs ? `?${qs}` : ''}`)
+    return http<PlaylistDetailsDto>(`/api/v0/playlists/${id}${qs ? `?${qs}` : ''}`)
   },
 
-  addSong(playlistId: number, songId: number): Promise<PlaylistDto> {
-    return http<PlaylistDto>(`/api/v0/playlists/${playlistId}/songs/${songId}`, {
+  addSong(playlistId: number, songId: number): Promise<PlaylistDetailsDto> {
+    return http<PlaylistDetailsDto>(`/api/v0/playlists/${playlistId}/songs/${songId}`, {
       method: 'POST',
     })
   },
 
-  removeSong(playlistId: number, songId: number): Promise<PlaylistDto> {
-    return http<PlaylistDto>(`/api/v0/playlists/${playlistId}/songs/${songId}`, {
+  removeSong(playlistId: number, songId: number): Promise<PlaylistDetailsDto> {
+    return http<PlaylistDetailsDto>(`/api/v0/playlists/${playlistId}/songs/${songId}`, {
       method: 'DELETE',
     })
   },
@@ -45,12 +52,29 @@ export const playlistApi = {
     return http<SongDto[]>(`/api/v0/playlists/${id}/search?${params.toString()}`)
   },
 
-  generateShareToken(id: number): Promise<PlaylistDto> {
-    return http<PlaylistDto>(`/api/v0/playlists/${id}/share`, { method: 'POST' })
+  generateShareToken(id: number): Promise<PlaylistDetailsDto> {
+    return http<PlaylistDetailsDto>(`/api/v0/playlists/${id}/share`, { method: 'POST' })
   },
 
-  toggleVisibility(id: number, isPrivate: boolean): Promise<PlaylistDto> {
-    return http<PlaylistDto>(`/api/v0/playlists/${id}/private?value=${isPrivate}`, {
+  getByShareToken(token: string, params: SongFilterParams = {}): Promise<PlaylistDetailsDto> {
+    const query = new URLSearchParams()
+    if (params.genre)                  query.set('genre',      params.genre)
+    if (params.artistName)             query.set('artistName', params.artistName)
+    if (params.album)                  query.set('album',      params.album)
+    if (params.yearFrom)               query.set('yearFrom',   String(params.yearFrom))
+    if (params.yearTo)                 query.set('yearTo',     String(params.yearTo))
+    if (params.page !== undefined)     query.set('page',       String(params.page))
+    if (params.pageSize !== undefined) query.set('pageSize',   String(params.pageSize))
+    const qs = query.toString()
+    return http<PlaylistDetailsDto>(`/api/v0/playlists/share/${token}${qs ? `?${qs}` : ''}`)
+  },
+
+  delete(id: number): Promise<void> {
+    return http<void>(`/api/v0/playlists/${id}`, { method: 'DELETE' })
+  },
+
+  toggleVisibility(id: number, isPrivate: boolean): Promise<PlaylistDetailsDto> {
+    return http<PlaylistDetailsDto>(`/api/v0/playlists/${id}/private?value=${isPrivate}`, {
       method: 'PATCH',
     })
   },
