@@ -26,7 +26,7 @@ public class PlaylistController {
     }
 
     @PostMapping
-    public ResponseEntity<PlaylistDetailsDto> createPlaylist(
+    public ResponseEntity<PlaylistDto> createPlaylist(
             @RequestBody @Valid CreateOrUpdatePlaylistDto dto,
             @AuthenticationPrincipal Jwt jwt) {
         UUID userId = extractUserId(jwt);

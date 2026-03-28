@@ -43,7 +43,7 @@ public class PlaylistService {
         this.songRepository = songRepository;
     }
 
-    public PlaylistDetailsDto createPlaylist(UUID userId, CreateOrUpdatePlaylistDto dto) {
+    public PlaylistDto createPlaylist(UUID userId, CreateOrUpdatePlaylistDto dto) {
 
         log.info("createPlaylist: creating playlist '{}' for user {}", dto.getPlaylistName(), userId);
 
