@@ -1,3 +1,21 @@
+export interface TokenPayload {
+  sub:    string
+  userId: string
+  exp:    number
+  iat:    number
+  scope:  string[]
+}
+
+export function getTokenPayload(): TokenPayload | null {
+  const token = getToken()
+  if (!token) return null
+  try {
+    return JSON.parse(atob(token.split('.')[1])) as TokenPayload
+  } catch {
+    return null
+  }
+}
+
 function isTokenExpired(token: string): boolean {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
@@ -15,4 +33,12 @@ export function getToken(): string | null {
     return null
   }
   return token
+}
+
+export function saveToken(token: string): void {
+  localStorage.setItem('access_token', token)
+}
+
+export function clearToken(): void {
+  localStorage.removeItem('access_token')
 }
