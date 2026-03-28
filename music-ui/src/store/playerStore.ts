@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { SongDto } from '../auth/contracts'
 import { songApi } from '../auth/songApi'
+import { clearToken } from '../auth/authToken'
 
 export type RepeatMode = 'off' | 'all' | 'one'
 
@@ -45,7 +46,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       return { likedIds: next }
     })
     // API call — rollback on failure
-    songApi.toggleLike(id).catch(() => {
+    songApi.toggleLike(id).catch((err: { errorType?: string; status?: number }) => {
+      if (err.errorType === 'NOT_FOUND' || err.status === 404) {
+        clearToken()
+        window.location.replace('/login')
+        return
+      }
       set(state => {
         const next = new Set(state.likedIds)
         if (next.has(id)) next.delete(id)
