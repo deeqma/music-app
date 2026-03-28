@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import type { SongDto } from '../mock/types'
-import { songs as allSongs } from '../mock/songData'
+import type { SongDto } from '../auth/contracts'
+import { songApi } from '../auth/songApi'
 
 export type RepeatMode = 'off' | 'all' | 'one'
 
@@ -13,20 +13,21 @@ interface PlayerState {
   repeatMode:   RepeatMode
   sourceRoute:  string
 
-  playSong:      (song: SongDto, queue: SongDto[], sourceRoute: string) => void
-  setIsPlaying:  (v: boolean) => void
-  toggleLike:    (id: number) => void
-  playNext:      () => void
-  playPrev:      () => void
-  toggleShuffle: () => void
-  toggleRepeat:  () => void
+  playSong:        (song: SongDto, queue: SongDto[], sourceRoute: string) => void
+  setIsPlaying:    (v: boolean) => void
+  toggleLike:      (id: number) => void
+  mergeLikedSongs: (songs: SongDto[]) => void
+  playNext:        () => void
+  playPrev:        () => void
+  toggleShuffle:   () => void
+  toggleRepeat:    () => void
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   currentSong:  null,
-  queue:        allSongs,
+  queue:        [],
   isPlaying:    false,
-  likedIds:     new Set(allSongs.filter(s => s.liked).map(s => s.id)),
+  likedIds:     new Set<number>(),
   shuffle:      false,
   repeatMode:   'off',
   sourceRoute:  '',
@@ -35,18 +36,39 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   setIsPlaying: v => set({ isPlaying: v }),
 
-  toggleLike: id =>
+  toggleLike: id => {
+    // Optimistic update
     set(state => {
       const next = new Set(state.likedIds)
       if (next.has(id)) next.delete(id)
       else              next.add(id)
+      return { likedIds: next }
+    })
+    // API call — rollback on failure
+    songApi.toggleLike(id).catch(() => {
+      set(state => {
+        const next = new Set(state.likedIds)
+        if (next.has(id)) next.delete(id)
+        else              next.add(id)
+        return { likedIds: next }
+      })
+    })
+  },
+
+  // Merge API-returned songs into likedIds (add liked, remove unliked)
+  mergeLikedSongs: (songs: SongDto[]) =>
+    set(state => {
+      const next = new Set(state.likedIds)
+      for (const s of songs) {
+        if (s.liked) next.add(s.id)
+        else         next.delete(s.id)
+      }
       return { likedIds: next }
     }),
 
   playNext: () => {
     const { currentSong, queue, shuffle, repeatMode } = get()
     if (!currentSong || queue.length === 0) return
-    // Manually skipping forward exits repeat-one → drop to repeat-all
     const nextRepeat = repeatMode === 'one' ? 'all' : repeatMode
     if (shuffle) {
       const others = queue.filter(s => s.id !== currentSong.id)
@@ -64,7 +86,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   playPrev: () => {
     const { currentSong, queue, repeatMode } = get()
     if (!currentSong || queue.length === 0) return
-    // Manually skipping backward exits repeat-one → drop to repeat-all
     const nextRepeat = repeatMode === 'one' ? 'all' : repeatMode
     const idx  = queue.findIndex(s => s.id === currentSong.id)
     const prev = queue[(idx - 1 + queue.length) % queue.length]

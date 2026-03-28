@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Icon from '../components/Icon'
 import searchRaw from '../assets/search.svg?raw'
@@ -5,7 +6,6 @@ import AudioContainer from '../AudioContainer'
 
 function usePageLabel(): string {
   const { pathname } = useLocation()
-
   if (pathname === '/explore')     return 'Explore'
   if (pathname === '/liked-songs') return 'Liked Songs'
   if (pathname === '/profile')     return 'Profile'
@@ -13,9 +13,16 @@ function usePageLabel(): string {
 }
 
 export default function MainContent() {
-  const label      = usePageLabel()
+  const label     = usePageLabel()
   const { pathname } = useLocation()
   const isPlaylist  = pathname.startsWith('/playlist/') || pathname === '/profile'
+
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Clear search when navigating to a different page
+  useEffect(() => {
+    setSearchQuery('')
+  }, [pathname])
 
   return (
     <main className="main-content">
@@ -29,10 +36,11 @@ export default function MainContent() {
               <input
                 type="text"
                 className="main-content__search-input"
-                placeholder="Search..."
+                placeholder="Search by song name or artist…"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
-
           </div>
 
           <hr className="main-content__divider" />
@@ -41,7 +49,7 @@ export default function MainContent() {
 
       <div className="main-content__body-wrapper">
         <div className="main-content__body">
-          <Outlet />
+          <Outlet context={{ searchQuery }} />
         </div>
       </div>
 

@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation } from 'react-router-dom'
-import type { SongDto } from '../mock/types'
+import type { SongDto } from '../auth/contracts'
+import { songApi } from '../auth/songApi'
 import Icon from './Icon'
 import musicRaw from '../assets/music.svg?raw'
 import xRaw     from '../assets/x.svg?raw'
@@ -9,14 +10,17 @@ import { usePlaylistsStore } from '../store/playlistsStore'
 import PlaylistDropdown from './PlaylistDropdown'
 
 interface SongDrawerProps {
-  readonly song:    SongDto
-  readonly onClose: () => void
+  readonly song:      SongDto
+  readonly onClose:   () => void
+  readonly onDelete?: (id: number) => void
 }
 
-export default function SongDrawer({ song, onClose }: SongDrawerProps) {
-  const drawerRef = useRef<HTMLDivElement>(null)
+export default function SongDrawer({ song, onClose, onDelete }: SongDrawerProps) {
+  const drawerRef   = useRef<HTMLDivElement>(null)
   const addTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [addedMsg, setAddedMsg] = useState('')
+  const [addedMsg,    setAddedMsg]    = useState('')
+  const [deleting,    setDeleting]    = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const { pathname } = useLocation()
   const isPlaylistPage = pathname.startsWith('/playlist/')
@@ -25,10 +29,8 @@ export default function SongDrawer({ song, onClose }: SongDrawerProps) {
   const { playlists, addSongToPlaylist, removeSongFromPlaylist } = usePlaylistsStore()
   const currentPlaylist = playlists.find(p => p.slug === currentSlug) ?? null
 
-  // Playlists that don't already contain this song
   const availablePlaylists = playlists.filter(p => !p.songDtos.some(s => s.id === song.id))
 
-  // Close on Escape and on click outside (excluding song-table row clicks)
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -65,6 +67,19 @@ export default function SongDrawer({ song, onClose }: SongDrawerProps) {
     onClose()
   }
 
+  async function handleDelete() {
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      await songApi.delete(song.id)
+      onDelete?.(song.id)
+      onClose()
+    } catch {
+      setDeleteError('Delete failed')
+      setDeleting(false)
+    }
+  }
+
   const mountEl = document.querySelector('.main-content__body-wrapper')
   if (!mountEl) return null
 
@@ -90,7 +105,7 @@ export default function SongDrawer({ song, onClose }: SongDrawerProps) {
         </div>
         <div className="song-drawer__meta-row">
           <span className="song-drawer__meta-label">Album</span>
-          <span className="song-drawer__meta-value">{song.album}</span>
+          <span className="song-drawer__meta-value">{song.album ?? '—'}</span>
         </div>
         <div className="song-drawer__meta-row">
           <span className="song-drawer__meta-label">Release Year</span>
@@ -121,8 +136,15 @@ export default function SongDrawer({ song, onClose }: SongDrawerProps) {
 
       <div className="song-drawer__actions">
         <button className="song-drawer__btn song-drawer__btn--edit">Edit</button>
-        <button className="song-drawer__btn song-drawer__btn--delete">Delete</button>
+        <button
+          className="song-drawer__btn song-drawer__btn--delete"
+          onClick={handleDelete}
+          disabled={deleting}
+        >
+          {deleting ? 'Deleting…' : 'Delete'}
+        </button>
       </div>
+      {deleteError && <p className="song-drawer__error">{deleteError}</p>}
     </div>,
     mountEl
   )

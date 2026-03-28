@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import type { SongDto } from '../mock/types'
+import type { SongDto } from '../auth/contracts'
 import PlayPauseButton from './PlayPauseButton'
 import HeartButton from './HeartButton'
 import SongDrawer from './SongDrawer'
 import { usePlayerStore } from '../store/playerStore'
 
 interface SongTableProps {
-  readonly songs: readonly SongDto[]
+  readonly songs:          readonly SongDto[]
+  readonly onSongDeleted?: (id: number) => void
 }
 
 function formatDuration(seconds: number): string {
@@ -16,7 +17,7 @@ function formatDuration(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-export default function SongTable({ songs }: SongTableProps) {
+export default function SongTable({ songs, onSongDeleted }: SongTableProps) {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const location = useLocation()
 
@@ -48,7 +49,7 @@ export default function SongTable({ songs }: SongTableProps) {
   return (
     <>
       {selectedSong && (
-        <SongDrawer song={selectedSong} onClose={() => setSelectedId(null)} />
+        <SongDrawer song={selectedSong} onClose={() => setSelectedId(null)} onDelete={onSongDeleted} />
       )}
 
       <table className="song-table">

@@ -44,6 +44,18 @@ ul {
   overflow: hidden;
 }
 
+.songs-status {
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  padding: 12px 0 4px;
+  opacity: 0.7;
+}
+
+.songs-status--end {
+  opacity: 0.4;
+}
+
 .icon {
   display: inline-flex;
   align-items: center;
