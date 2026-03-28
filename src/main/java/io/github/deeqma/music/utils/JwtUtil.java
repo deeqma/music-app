@@ -8,6 +8,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import io.github.deeqma.music.error.ErrorType;
 import io.github.deeqma.music.error.JwtException;
+import io.github.deeqma.music.model.Role;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
@@ -30,11 +31,12 @@ public class JwtUtil {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(UUID userId, String username) {
+    public String generateToken(UUID userId, String username, Role role) {
         try {
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                     .subject(username)
                     .claim("userId", userId.toString())
+                    .claim("role", role.name())
                     .claim("scope", List.of("read", "write", "delete"))
                     .issuer("Music App")
                     .issueTime(new Date())
@@ -56,6 +58,10 @@ public class JwtUtil {
 
     public static UUID extractUserId(Jwt jwt) {
         return UUID.fromString(jwt.getClaimAsString("userId"));
+    }
+
+    public static Role extractRole(Jwt jwt) {
+        return Role.valueOf(jwt.getClaimAsString("role"));
     }
 
 }

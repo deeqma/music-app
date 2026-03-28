@@ -6,6 +6,7 @@ import io.github.deeqma.music.dto.auth.LoginRequest;
 import io.github.deeqma.music.dto.auth.RegisterRequest;
 import io.github.deeqma.music.error.ErrorType;
 import io.github.deeqma.music.error.UserException;
+import io.github.deeqma.music.model.Role;
 import io.github.deeqma.music.model.User;
 import io.github.deeqma.music.repository.UserRepository;
 import io.github.deeqma.music.utils.JwtUtil;
@@ -49,6 +50,7 @@ public class AuthService {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setHashedPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(request.getRole() != null ? request.getRole() : Role.USER);
 
         userRepository.save(user);
 
@@ -70,7 +72,7 @@ public class AuthService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new UserException(ErrorType.NOT_FOUND, "User '" + request.getUsername() + "' not found"));
 
-        String token = jwtUtil.generateToken(user.getId(), user.getUsername());
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
 
         log.info("User logged in: id={}, username={}", user.getId(), user.getUsername());
 

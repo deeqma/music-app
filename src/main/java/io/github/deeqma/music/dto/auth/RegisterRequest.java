@@ -1,6 +1,7 @@
 package io.github.deeqma.music.dto.auth;
 
 
+import io.github.deeqma.music.model.Role;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -13,6 +14,8 @@ public class RegisterRequest {
     @NotBlank
     @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
     private String password;
+
+    private Role role;
 
     public RegisterRequest() {
     }
@@ -28,6 +31,14 @@ public class RegisterRequest {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public Role getRole() {
+        return role;
     }
 
     public String getPassword() {

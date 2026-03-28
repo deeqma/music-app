@@ -22,6 +22,10 @@ public class User  implements UserDetails {
     @Column(nullable = false)
     private String hashedPassword;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.USER;
+
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private Set<Playlist> playlists = new HashSet<>();
@@ -61,6 +65,14 @@ public class User  implements UserDetails {
 
     public String getHashedPassword() {
         return hashedPassword;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public Role getRole() {
+        return role;
     }
 
     public void setHashedPassword(String hashedPassword) {
