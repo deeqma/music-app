@@ -227,7 +227,11 @@ public class SongService {
             throw new SongException(ErrorType.DUPLICATED_SONG, "Song with this name and artist already exists");
         }
     }
-
+    public SongDto toDto(Song song, Set<Long> likedSongIds) {
+        SongDto dto = toDto(song);
+        dto.setLiked(likedSongIds.contains(song.getId()));
+        return dto;
+    }
     private Song findSongById(Long id) {
         return songRepository.findById(id).orElseThrow(
                 () -> new SongException(ErrorType.SONG_NOT_FOUND, "Song not found")
