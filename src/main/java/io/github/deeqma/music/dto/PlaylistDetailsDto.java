@@ -14,6 +14,7 @@ public class PlaylistDetailsDto {
     private int totalSongs;
     private String shareToken;
     private int totalDurationSeconds;
+    private boolean owner;
     private List<SongDto> songDtos = new ArrayList<>();
 
     public Long getPlaylistId() {
@@ -34,6 +35,14 @@ public class PlaylistDetailsDto {
 
     public String getDescription() {
         return description;
+    }
+
+    public boolean isOwner() {
+        return owner;
+    }
+
+    public void setOwner(boolean owner) {
+        this.owner = owner;
     }
 
     public void setDescription(String description) {

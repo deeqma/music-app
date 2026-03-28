@@ -83,7 +83,7 @@ public class GlobalExceptionHandler {
                  PLAYLIST_SHARE_NOT_ALLOWED -> HttpStatus.BAD_REQUEST;
             case FILE_STORAGE_ERROR,
                  TOKEN_GENERATION_FAILED -> HttpStatus.INTERNAL_SERVER_ERROR;
-            case PLAYLIST_LIMIT_REACHED -> HttpStatus.FORBIDDEN;
+            case PLAYLIST_LIMIT_REACHED,PLAYLIST_NOT_OWNED -> HttpStatus.FORBIDDEN;
             case BAD_CREDENTIALS, UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
         };
     }

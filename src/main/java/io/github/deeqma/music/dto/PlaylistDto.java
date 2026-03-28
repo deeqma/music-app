@@ -4,6 +4,7 @@ public class PlaylistDto {
     private Long playlistId;
     private String playlistName;
     private String slug;
+    private boolean owner;
 
     public Long getPlaylistId() {
         return playlistId;
@@ -23,6 +24,14 @@ public class PlaylistDto {
 
     public String getSlug() {
         return slug;
+    }
+
+    public boolean isOwner() {
+        return owner;
+    }
+
+    public void setOwner(boolean owner) {
+        this.owner = owner;
     }
 
     public void setSlug(String slug) {

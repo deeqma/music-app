@@ -8,6 +8,7 @@ import io.github.deeqma.music.model.Playlist;
 import io.github.deeqma.music.model.PlaylistVisibility;
 import io.github.deeqma.music.model.Song;
 import io.github.deeqma.music.model.User;
+import io.github.deeqma.music.repository.LikedSongRepository;
 import io.github.deeqma.music.repository.PlaylistRepository;
 import io.github.deeqma.music.repository.SongRepository;
 import io.github.deeqma.music.repository.UserRepository;
@@ -35,12 +36,13 @@ public class PlaylistService {
     private final UserRepository userRepository;
     private final SongService songService;
     private final SongRepository songRepository;
-
-    public PlaylistService(PlaylistRepository playlistRepository, UserRepository userRepository, SongService songService, SongRepository songRepository) {
+    private final LikedSongRepository likedSongRepository;
+    public PlaylistService(PlaylistRepository playlistRepository, UserRepository userRepository, SongService songService, SongRepository songRepository, LikedSongRepository likedSongRepository) {
         this.playlistRepository = playlistRepository;
         this.userRepository = userRepository;
         this.songService = songService;
         this.songRepository = songRepository;
+        this.likedSongRepository = likedSongRepository;
     }
 
     public PlaylistDto createPlaylist(UUID userId, CreateOrUpdatePlaylistDto dto) {
@@ -68,7 +70,7 @@ public class PlaylistService {
 
         Playlist saved = playlistRepository.save(playlist);
         log.info("createPlaylist: created playlist ID {} for user {}", saved.getId(), userId);
-        return toDetailsDto(saved);
+        return toDto(saved, userId);
     }
 
     @Transactional(readOnly = true)
@@ -81,7 +83,7 @@ public class PlaylistService {
 
         List<PlaylistDto> result = new ArrayList<>();
         for (Playlist playlist : playlists) {
-            result.add(toDto(playlist));
+            result.add(toDto(playlist, userId));
         }
         return result;
     }
@@ -101,7 +103,7 @@ public class PlaylistService {
                 .collect(Collectors.toSet());
 
         if (songIds.isEmpty()) {
-            PlaylistDetailsDto dto = toDetailsDto(playlist);
+            PlaylistDetailsDto dto = toDetailsDto(playlist, userId);
             dto.setSongDtos(new ArrayList<>());
             dto.setTotalDurationSeconds(0);
             return dto;
@@ -116,20 +118,24 @@ public class PlaylistService {
                 .mapToInt(Song::getDurationSeconds)
                 .sum();
 
-        List<SongDto> songDtos = songs.stream().map(songService::toDto).toList();
+        Set<Long> likedSongIds = likedSongRepository.findSongIdsByUserId(userId);
+        List<SongDto> songDtos = songs.stream()
+                .map(song -> songService.toDto(song, likedSongIds))
+                .toList();
 
-        PlaylistDetailsDto dto = toDetailsDto(playlist);
+        PlaylistDetailsDto dto = toDetailsDto(playlist, userId);
         dto.setSongDtos(songDtos);
         dto.setTotalDurationSeconds(totalDurationSeconds);
         return dto;
     }
+
 
     public PlaylistDetailsDto updatePlaylist(Long playlistId, UUID userId, CreateOrUpdatePlaylistDto dto) {
 
         log.info("updatePlaylist: updating playlist ID {} for user {}", playlistId, userId);
 
         Playlist playlist = findPlaylistById(playlistId);
-        validateOwnership(playlist, userId);
+        checkOwnership(playlist, userId, "You don't own this playlist and cannot edit it");
 
         String newName = dto.getPlaylistName();
 
@@ -146,7 +152,18 @@ public class PlaylistService {
 
         Playlist saved = playlistRepository.save(playlist);
         log.info("updatePlaylist: updated playlist ID {} for user {}", playlistId, userId);
-        return toDetailsDto(saved);
+        return toDetailsDto(saved, userId);
+    }
+
+    public void deletePlaylist(Long playlistId, UUID userId) {
+
+        log.info("deletePlaylist: deleting playlist ID {} for user {}", playlistId, userId);
+
+        Playlist playlist = findPlaylistById(playlistId);
+        checkOwnership(playlist, userId, "You don't own this playlist and cannot delete it");
+
+        playlistRepository.delete(playlist);
+        log.info("deletePlaylist: deleted playlist ID {} for user {}", playlistId, userId);
     }
 
     @Transactional
@@ -155,7 +172,7 @@ public class PlaylistService {
         log.info("addSongToPlaylist: adding song {} to playlist {}", songId, playlistId);
 
         Playlist playlist = findPlaylistById(playlistId);
-        validateOwnership(playlist, userId);
+        checkOwnership(playlist, userId, "You don't own this playlist and cannot add songs to it");
 
         Song song = songRepository.findById(songId).orElseThrow(
                 () -> new SongException(ErrorType.SONG_NOT_FOUND, "Song not found")
@@ -168,7 +185,7 @@ public class PlaylistService {
         playlist.getSongs().add(song);
         Playlist saved = playlistRepository.save(playlist);
         log.info("addSongToPlaylist: song {} added to playlist {}", songId, playlistId);
-        return toDetailsDto(saved);
+        return toDetailsDto(saved, userId);
     }
 
     @Transactional
@@ -177,7 +194,7 @@ public class PlaylistService {
         log.info("removeSongFromPlaylist: removing song {} from playlist {}", songId, playlistId);
 
         Playlist playlist = findPlaylistById(playlistId);
-        validateOwnership(playlist, userId);
+        checkOwnership(playlist, userId, "You don't own this playlist and cannot remove songs from it");
 
         Song song = songRepository.findById(songId).orElseThrow(
                 () -> new SongException(ErrorType.SONG_NOT_FOUND, "Song not found")
@@ -190,7 +207,7 @@ public class PlaylistService {
         playlist.getSongs().remove(song);
         Playlist saved = playlistRepository.save(playlist);
         log.info("removeSongFromPlaylist: song {} removed from playlist {}", songId, playlistId);
-        return toDetailsDto(saved);
+        return toDetailsDto(saved, userId);
     }
 
     public PlaylistDetailsDto generateShareToken(Long playlistId, UUID userId) {
@@ -198,7 +215,7 @@ public class PlaylistService {
         log.info("generateShareToken: generating share token for playlist ID {}", playlistId);
 
         Playlist playlist = findPlaylistById(playlistId);
-        validateOwnership(playlist, userId);
+        checkOwnership(playlist, userId, "You don't own this playlist and cannot generate a share token");
 
         if (playlist.getVisibility() == PlaylistVisibility.PUBLIC) {
             throw new PlaylistException(ErrorType.PLAYLIST_SHARE_NOT_ALLOWED, "Public playlists cannot generate a share link");
@@ -212,7 +229,7 @@ public class PlaylistService {
         playlist.setShareToken(generateUniqueToken());
         Playlist saved = playlistRepository.save(playlist);
         log.info("generateShareToken: share token generated for playlist ID {}", playlistId);
-        return toDetailsDto(saved);
+        return toDetailsDto(saved, userId);
     }
 
     public List<SongDto> searchSongsInPlaylist(Long playlistId, String query, String shareToken,
@@ -225,7 +242,7 @@ public class PlaylistService {
         if (playlist.getVisibility() == PlaylistVisibility.PRIVATE) {
             boolean hasShareToken = StringUtils.hasText(shareToken) && shareToken.equals(playlist.getShareToken());
             if (!hasShareToken) {
-                validateOwnership(playlist, userId);
+                checkOwnership(playlist, userId, "You don't own this playlist and cannot search its songs");
             }
         }
 
@@ -239,7 +256,10 @@ public class PlaylistService {
         List<Song> songs = songRepository.findAll(spec, PageRequest.of(page, pageSize)).getContent();
         log.info("searchSongsInPlaylist: found {} songs in playlist ID {}", songs.size(), playlistId);
 
-        return songs.stream().map(songService::toDto).toList();
+        Set<Long> likedSongIds = likedSongRepository.findSongIdsByUserId(userId);
+        return songs.stream()
+                .map(song -> songService.toDto(song, likedSongIds))
+                .toList();
     }
 
     public PlaylistDetailsDto toggleVisibility(Long playlistId, boolean isPrivate, UUID userId) {
@@ -247,7 +267,7 @@ public class PlaylistService {
         log.info("toggleVisibility: setting playlist ID {} to {}", playlistId, isPrivate ? "PRIVATE" : "PUBLIC");
 
         Playlist playlist = findPlaylistById(playlistId);
-        validateOwnership(playlist, userId);
+        checkOwnership(playlist, userId, "You don't own this playlist and cannot change its visibility");
 
         if (isPrivate) {
             playlist.setVisibility(PlaylistVisibility.PRIVATE);
@@ -258,13 +278,23 @@ public class PlaylistService {
             log.info("toggleVisibility: playlist ID {} set to PUBLIC, share token removed", playlistId);
         }
 
-        return toDetailsDto(playlistRepository.save(playlist));
+        return toDetailsDto(playlistRepository.save(playlist), userId);
+    }
+
+    private void checkOwnership(Playlist playlist, UUID userId, String message) {
+        if (playlist.getOwner() == null || !playlist.getOwner().getId().equals(userId)) {
+            throw new PlaylistException(ErrorType.PLAYLIST_NOT_OWNED, message);
+        }
     }
 
     private void validateOwnership(Playlist playlist, UUID userId) {
         if (playlist.getOwner() == null || !playlist.getOwner().getId().equals(userId)) {
             throw new PlaylistException(ErrorType.PLAYLIST_NOT_FOUND, "Playlist not found");
         }
+    }
+
+    private boolean isOwner(Playlist playlist, UUID userId) {
+        return playlist.getOwner() != null && playlist.getOwner().getId().equals(userId);
     }
 
     private String generateSlug(String name) {
@@ -291,15 +321,16 @@ public class PlaylistService {
         );
     }
 
-    private PlaylistDto toDto(Playlist playlist) {
+    private PlaylistDto toDto(Playlist playlist, UUID userId) {
         PlaylistDto dto = new PlaylistDto();
         dto.setPlaylistId(playlist.getId());
         dto.setPlaylistName(playlist.getName());
         dto.setSlug(playlist.getSlug());
+        dto.setOwner(isOwner(playlist, userId));
         return dto;
     }
 
-    private PlaylistDetailsDto toDetailsDto(Playlist playlist) {
+    private PlaylistDetailsDto toDetailsDto(Playlist playlist, UUID userId) {
         PlaylistDetailsDto dto = new PlaylistDetailsDto();
         dto.setPlaylistId(playlist.getId());
         dto.setPlaylistName(playlist.getName());
@@ -307,6 +338,7 @@ public class PlaylistService {
         dto.setSlug(playlist.getSlug());
         dto.setVisibility(playlist.getVisibility());
         dto.setTotalSongs(playlist.getSongs().size());
+        dto.setOwner(isOwner(playlist, userId));
         if (playlist.getVisibility() == PlaylistVisibility.PRIVATE) {
             dto.setShareToken(playlist.getShareToken());
         }

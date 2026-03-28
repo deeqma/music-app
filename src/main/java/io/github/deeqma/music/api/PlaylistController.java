@@ -59,6 +59,15 @@ public class PlaylistController {
         return ResponseEntity.ok(playlistService.updatePlaylist(id, userId, dto));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePlaylist(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = extractUserId(jwt);
+        playlistService.deletePlaylist(id, userId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{playlistId}/songs/{songId}")
     public ResponseEntity<PlaylistDetailsDto> addSongToPlaylist(
             @PathVariable Long playlistId,
