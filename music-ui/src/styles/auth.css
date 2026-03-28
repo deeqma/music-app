@@ -150,3 +150,32 @@
 .auth-page__link:hover {
   text-decoration: underline;
 }
+
+.auth-page__role-group {
+  display: flex;
+  gap: 8px;
+}
+
+.auth-page__role-btn {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.auth-page__role-btn:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.auth-page__role-btn--active {
+  background-color: var(--color-accent-fade);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}

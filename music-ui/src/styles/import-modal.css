@@ -209,3 +209,48 @@
 .import-modal__import-btn:hover {
   background-color: var(--color-accent-hover);
 }
+
+.import-modal__import-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Two-button footer row (Cancel + Confirm) */
+.cpl-modal__footer--row {
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid var(--color-border);
+  padding: 16px 24px 22px;
+}
+
+.cpl-modal__footer--row .import-modal__import-btn {
+  flex: 1;
+}
+
+.cpl-modal__cancel-btn {
+  background-color: transparent !important;
+  color: var(--color-text-secondary) !important;
+  border: 1px solid var(--color-border);
+}
+
+.cpl-modal__cancel-btn:hover {
+  background-color: var(--color-surface-hover) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Create Playlist modal extras */
+.cpl-modal {
+  width: 440px;
+}
+
+.cpl-modal__textarea {
+  resize: vertical;
+  min-height: 76px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.cpl-modal__error {
+  font-size: 13px;
+  color: var(--color-error, #f55);
+}

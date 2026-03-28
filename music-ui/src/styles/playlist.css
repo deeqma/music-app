@@ -95,19 +95,18 @@
   color: var(--color-text-secondary);
 }
 
-.playlist-hero__visibility-btn {
+.playlist-hero__error {
+  font-size: 13px;
+  color: var(--color-error, #f55);
+  margin: 0;
+}
+
+.playlist-hero__visibility-badge {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 24px;
   height: 24px;
-  border-radius: 6px;
-  transition: background-color 0.15s, transform 0.15s;
-}
-
-.playlist-hero__visibility-btn:hover {
-  background-color: var(--color-surface-hover);
-  transform: scale(1.25);
 }
 
 .playlist-hero__name {

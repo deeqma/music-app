@@ -266,7 +266,18 @@
   transition: background-color 0.15s, border-color 0.15s;
 }
 
-.profile__delete-btn:hover {
+.profile__delete-btn:hover:not(:disabled) {
   background-color: hsla(0, 65%, 52%, 0.1);
   border-color: hsl(0, 65%, 52%);
+}
+
+.profile__delete-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.profile__danger-error {
+  font-size: 12px;
+  color: hsl(0, 65%, 52%);
+  margin: 0;
 }
