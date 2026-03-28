@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -16,7 +17,7 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long>, JpaSp
     int countByOwnerId(UUID ownerId);
     boolean existsByShareToken(String shareToken);
     boolean existsByNameAndOwnerId(String name, UUID ownerId);
-
+    Optional<Playlist> findByShareToken(String shareToken);
     @Query("SELECT p FROM Playlist p WHERE p.visibility = 'PUBLIC' OR p.owner.id = :userId")
     List<Playlist> findAllPublicAndOwnedBy(@Param("userId") UUID userId);
     boolean existsByName(String playListName);
