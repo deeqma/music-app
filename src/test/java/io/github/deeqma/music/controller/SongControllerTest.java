@@ -198,12 +198,24 @@ class SongControllerTest {
     }
 
     @Test
-    void returnsPartialContentOnSuccessfulStream() throws Exception {
+    void returnsOkOnInitialStream() throws Exception {
         Resource resource = new ByteArrayResource("fake-mp3-content".getBytes());
         ResourceRegion region = new ResourceRegion(resource, 0, resource.contentLength());
         when(songService.streamSong(eq(1L), any(HttpHeaders.class))).thenReturn(region);
 
         mockMvc.perform(get("/api/v1/songs/1/stream")
+                        .with(mockJwt()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void returnsPartialContentOnStreamWithRangeHeader() throws Exception {
+        Resource resource = new ByteArrayResource("fake-mp3-content".getBytes());
+        ResourceRegion region = new ResourceRegion(resource, 0, 8);
+        when(songService.streamSong(eq(1L), any(HttpHeaders.class))).thenReturn(region);
+
+        mockMvc.perform(get("/api/v1/songs/1/stream")
+                        .header(HttpHeaders.RANGE, "bytes=0-7")
                         .with(mockJwt()))
                 .andExpect(status().isPartialContent());
     }
