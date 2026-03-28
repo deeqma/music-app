@@ -42,7 +42,13 @@ public class GlobalExceptionHandler {
                 new ErrorResponse(null, HttpStatus.BAD_REQUEST.value(), Instant.now(), message)
         );
     }
-
+    @ExceptionHandler(UserException.class)
+    public ResponseEntity<ErrorResponse> handleUserException(UserException ex) {
+        HttpStatus status = resolveStatus(ex.getErrorType());
+        return ResponseEntity.status(status).body(
+                new ErrorResponse(ex.getErrorType(), status.value(), Instant.now(), ex.getMessage())
+        );
+    }
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
         return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(
