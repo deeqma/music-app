@@ -157,7 +157,7 @@ public class SongService {
 
     public ResourceRegion streamSong(Long id, HttpHeaders headers) {
 
-        log.info("getSongRegion: streaming song ID {}", id);
+        log.info("streamSong: streaming song ID {}", id);
 
         Song song = findSongById(id);
 
@@ -169,25 +169,20 @@ public class SongService {
                 throw new SongException(ErrorType.FILE_NOT_FOUND, "Song file not found on disk");
             }
 
-            return resolveRegion(resource, headers);
+            long contentLength = resource.contentLength();
+            HttpRange range = headers.getRange().isEmpty() ? null : headers.getRange().getFirst();
+
+            if (range != null) {
+                long start = range.getRangeStart(contentLength);
+                long end = range.getRangeEnd(contentLength);
+                return new ResourceRegion(resource, start, end - start + 1);
+            }
+
+            return new ResourceRegion(resource, 0, contentLength);
 
         } catch (IOException e) {
             throw new SongException(ErrorType.FILE_NOT_FOUND, "Song file not found", e);
         }
-    }
-
-    private ResourceRegion resolveRegion(Resource resource, HttpHeaders headers) throws IOException {
-        long contentLength = resource.contentLength();
-        HttpRange range = headers.getRange().isEmpty() ? null : headers.getRange().getFirst();
-
-        if (range != null) {
-            long start = range.getRangeStart(contentLength);
-            long end = range.getRangeEnd(contentLength);
-            long rangeLength = Math.min(1048576, end - start + 1);
-            return new ResourceRegion(resource, start, rangeLength);
-        }
-
-        return new ResourceRegion(resource, 0, Math.min(1048576, contentLength));
     }
 
     @Transactional

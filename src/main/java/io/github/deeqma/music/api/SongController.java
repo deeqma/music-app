@@ -18,6 +18,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -137,12 +138,26 @@ public class SongController {
             @RequestHeader HttpHeaders headers) {
 
         ResourceRegion region = songService.streamSong(id, headers);
+        HttpRange range = headers.getRange().isEmpty() ? null : headers.getRange().getFirst();
+        HttpStatus status = range != null ? HttpStatus.PARTIAL_CONTENT : HttpStatus.OK;
 
-        return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
+        ResponseEntity.BodyBuilder builder = ResponseEntity.status(status)
                 .contentType(MediaType.parseMediaType("audio/mpeg"))
-                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
                 .header(HttpHeaders.ACCEPT_RANGES, "bytes")
-                .body(region);
+                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400");
+
+        if (range != null) {
+            try {
+                long contentLength = region.getResource().contentLength();
+                long start = range.getRangeStart(contentLength);
+                long end = range.getRangeEnd(contentLength);
+                builder.header(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + contentLength);
+            } catch (IOException _) {
+                //
+            }
+        }
+
+        return builder.body(region);
     }
 
 }
