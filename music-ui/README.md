@@ -1,5 +1,9 @@
 # Music UI
 
+### Getting Started
+
+* `npm run build`
+* `npm run dev`
 
 ## Design
 
