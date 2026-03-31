@@ -36,8 +36,10 @@ class UploadSongServiceIT extends AbstractPostgresContainer {
     private SongRepository songRepository;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         songRepository.deleteAll();
+        Path tempStorage = Paths.get(System.getProperty("java.io.tmpdir"), "music-test-mp3");
+        Files.createDirectories(tempStorage);
     }
 
     @Test
@@ -144,6 +146,14 @@ class UploadSongServiceIT extends AbstractPostgresContainer {
     }
 
     @Test
+    void savedSongFilePathPointsToStorageDirectory() {
+        SongDto result = uploadSongService.uploadSong(validMp3File("path-check.mp3"), validDto());
+
+        Song saved = songRepository.findById(result.getId()).orElseThrow();
+        assertTrue(saved.getFilePath().contains("music-test-mp3"));
+    }
+
+    @Test
     void throwsMp3AlreadyExistWhenSameFileUploaded() {
         CreateOrUpdateSongDto firstDto = validDto();
         MockMultipartFile firstFile = validMp3File("first-upload.mp3");
@@ -189,8 +199,7 @@ class UploadSongServiceIT extends AbstractPostgresContainer {
                         .forEach(path -> {
                             try {
                                 Files.deleteIfExists(path);
-                            } catch (IOException _) {
-                                //
+                            } catch (IOException ignored) {
                             }
                         });
             }
