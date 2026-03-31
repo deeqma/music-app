@@ -7,8 +7,10 @@ import io.github.deeqma.music.model.User;
 import io.github.deeqma.music.repository.PlaylistRepository;
 import io.github.deeqma.music.repository.SongRepository;
 import io.github.deeqma.music.repository.UserRepository;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -21,7 +23,7 @@ import java.io.InputStream;
 import java.util.List;
 
 @Component
-@Profile("dev")
+@Profile("!test")
 public class DataInitializer implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
@@ -31,6 +33,9 @@ public class DataInitializer implements ApplicationRunner {
     private final PlaylistRepository playlistRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+
+    @Value("${storage.mp3.path}")
+    private String storagePath;
 
     public DataInitializer(SongRepository songRepository,
                            PlaylistRepository playlistRepository,
@@ -53,12 +58,11 @@ public class DataInitializer implements ApplicationRunner {
 
     private record PlaylistData(
             String playlistName,
-            String description,
-            String visibility
+            String description
     ) {}
 
     @Override
-    public void run(ApplicationArguments args) {
+    public void run(@NonNull ApplicationArguments args) {
         User systemUser = loadSystemUser();
         loadSongs();
         loadPlaylists(systemUser);
@@ -87,13 +91,15 @@ public class DataInitializer implements ApplicationRunner {
                 if (songRepository.existsBySongNameAndArtistName(data.songName(), data.artistName())) {
                     skipped++;
                 } else {
+                    String filePath = storagePath + "/" + data.filePath();
+
                     Song song = new Song();
                     song.setSongName(data.songName());
                     song.setArtistName(data.artistName());
                     song.setAlbum(data.album());
                     song.setGenre(data.genre());
                     song.setReleaseYear(data.releaseYear());
-                    song.setFilePath(data.filePath());
+                    song.setFilePath(filePath);
                     songRepository.save(song);
                     added++;
                 }
@@ -146,25 +152,15 @@ public class DataInitializer implements ApplicationRunner {
         switch (playlistName) {
             case "Rock" -> allSongs.stream()
                     .filter(s -> containsIgnoreCase(s.getGenre(), "rock"))
-                    .filter(s -> !containsIgnoreCase(s.getGenre(), "hard rock"))
-                    .filter(s -> !containsIgnoreCase(s.getGenre(), "heavy metal"))
                     .forEach(s -> playlist.getSongs().add(s));
 
             case "Blues" -> allSongs.stream()
                     .filter(s -> containsIgnoreCase(s.getGenre(), "blues"))
                     .forEach(s -> playlist.getSongs().add(s));
 
-            case "Hard Rock" -> allSongs.stream()
-                    .filter(s -> containsIgnoreCase(s.getGenre(), "hard rock"))
-                    .forEach(s -> playlist.getSongs().add(s));
-
-            case "Metal" -> allSongs.stream()
-                    .filter(s -> containsIgnoreCase(s.getGenre(), "metal"))
-                    .forEach(s -> playlist.getSongs().add(s));
-
-            case "Soul" -> allSongs.stream()
-                    .filter(s -> containsIgnoreCase(s.getGenre(), "soul") ||
-                            containsIgnoreCase(s.getGenre(), "r&b"))
+            case "Funky" -> allSongs.stream()
+                    .filter(s -> containsIgnoreCase(s.getGenre(), "funk") ||
+                            containsIgnoreCase(s.getGenre(), "funky"))
                     .forEach(s -> playlist.getSongs().add(s));
 
             default -> log.warn("DataInitializer: no song mapping defined for playlist '{}'", playlistName);
