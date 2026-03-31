@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   database:
     container_name: database
@@ -9,7 +8,40 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: pass
     ports:
-      - "5432:5432"
-#    volumes:
-#      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-#      - ./database/data:/var/lib/postgresql
+      - "5435:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+
+  backend:
+    container_name: backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8083:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/music
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: pass
+      STORAGE_MP3_PATH: /app/music/songs
+      JWT_SECRET: "kPxo1WznfjNQjTpbKCgj435rhgOI9TCkIuMhdZPBrPo="
+      CORS_ALLOWED_ORIGINS: "http://localhost:5175"
+    volumes:
+      - ${HOME}/Music/musicapp/mp3:/app/music/songs
+    depends_on:
+      - database
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./music-ui
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8083
+    restart: unless-stopped
+    ports:
+      - "5175:80"
+    depends_on:
+      - backend
