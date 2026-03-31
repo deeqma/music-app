@@ -1,27 +1,14 @@
 [
   {
     "playlistName": "Rock",
-    "description": "Classic and modern rock anthems that defined generations. From hard-hitting riffs to unforgettable solos.",
-    "visibility": "PUBLIC"
+    "description": "Classic and modern rock anthems that defined generations. From hard-hitting riffs to unforgettable solos."
   },
   {
     "playlistName": "Blues",
-    "description": "Deep, soulful blues from the legends. Raw emotion and storytelling through guitar and voice.",
-    "visibility": "PUBLIC"
+    "description": "Deep, soulful blues from the legends. Raw emotion and storytelling through guitar and voice."
   },
   {
-    "playlistName": "Hard Rock",
-    "description": "High voltage, high energy. The heaviest and loudest rock tracks for when you need to turn it up.",
-    "visibility": "PUBLIC"
-  },
-  {
-    "playlistName": "Metal",
-    "description": "Heavy, loud, and unapologetic. Pure metal from the greatest bands ever to plug in.",
-    "visibility": "PUBLIC"
-  },
-  {
-    "playlistName": "Soul",
-    "description": "Timeless soul and R&B classics. Smooth, emotional and deeply human music that hits different.",
-    "visibility": "PUBLIC"
+    "playlistName": "Funky",
+    "description": "Groove-heavy funk tracks that make it impossible to sit still."
   }
 ]
