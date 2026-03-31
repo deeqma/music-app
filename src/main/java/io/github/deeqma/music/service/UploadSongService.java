@@ -8,7 +8,6 @@ import io.github.deeqma.music.model.Song;
 import io.github.deeqma.music.repository.SongRepository;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -16,41 +15,46 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 @SuppressWarnings("unused")
 @Service
 public class UploadSongService {
 
     private static final Logger log = LoggerFactory.getLogger(UploadSongService.class);
 
-    private static final long MAX_FILE_SIZE = 31457280; // 30MB
+    private static final long MAX_FILE_SIZE = 31457280;
+
     private final SongRepository songRepository;
     private final SongService songService;
 
-    @Autowired
+    @Value("${storage.mp3.path}")
+    private String storagePath;
+
     public UploadSongService(SongRepository songRepository, SongService songService) {
         this.songRepository = songRepository;
         this.songService = songService;
     }
 
-    @Value("${storage.mp3.path}")
-    private String storagePath;
-
     public SongDto uploadSong(MultipartFile file, CreateOrUpdateSongDto dto) {
 
         log.info("uploadSong: uploading '{}' by '{}'", dto.getSongName(), dto.getArtistName());
 
-        validate(file, dto);
-
         try {
             String fileHash = generateFileHash(file);
+            validateFile(file, dto, fileHash);
+
             String filePath = saveFile(file);
+            log.info("uploadSong: file saved to '{}'", filePath);
 
             Song song = new Song();
             song.setSongName(dto.getSongName());
@@ -66,13 +70,14 @@ public class UploadSongService {
             log.info("uploadSong: saved song ID {}", saved.getId());
             return songService.toDto(saved);
 
+
         } catch (IOException e) {
-            throw new SongException(ErrorType.FILE_STORAGE_ERROR, "Failed to upload the song", e);
+            throw new SongException(ErrorType.FILE_STORAGE_ERROR, "Failed to save file: " + e.getMessage(), e);
         }
+
     }
 
-
-    private void validate(MultipartFile file, CreateOrUpdateSongDto dto) {
+    private void validateFile(MultipartFile file, CreateOrUpdateSongDto dto, String fileHash) {
 
         if (file.isEmpty()) {
             throw new SongException(ErrorType.FILE_NOT_FOUND, "File is empty");
@@ -96,23 +101,24 @@ public class UploadSongService {
             throw new SongException(ErrorType.DUPLICATED_SONG, "Song with this name and artist already exists");
         }
 
-        try {
-            String fileHash = generateFileHash(file);
-            if (songRepository.existsByFileHash(fileHash)) {
-                throw new SongException(ErrorType.MP3_ALREADY_EXIST, "This MP3 has already been uploaded");
-            }
-        } catch (IOException e) {
-            throw new SongException(ErrorType.FILE_STORAGE_ERROR, "Could not read file for validation", e);
+        if (songRepository.existsByFileHash(fileHash)) {
+            throw new SongException(ErrorType.MP3_ALREADY_EXIST, "This MP3 has already been uploaded");
         }
     }
 
     private String saveFile(MultipartFile file) throws IOException {
         Path storageDir = resolveStorageDirectory();
-        String fileName = resolveFileName(file.getOriginalFilename());
-        String filePath = storageDir.resolve(fileName).toString();
-        file.transferTo(new File(filePath));
-        return filePath;
+        Path filePath = storageDir.resolve(resolveFileName()).normalize();
+
+        if (!filePath.toAbsolutePath().startsWith(storageDir.toAbsolutePath())) {
+            throw new SongException(ErrorType.FILE_STORAGE_ERROR, "Invalid file path detected");
+        }
+
+        log.info("saveFile: saving to '{}'", filePath.toAbsolutePath());
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        return filePath.toString();
     }
+
 
     private String generateFileHash(MultipartFile file) throws IOException {
         try {
@@ -132,25 +138,28 @@ public class UploadSongService {
         try {
             AudioFile audioFile = AudioFileIO.read(new File(filePath));
             return audioFile.getAudioHeader().getTrackLength();
-        } catch (Exception _) {
-            log.warn("extractDuration: could not read duration for '{}', defaulting to 0", filePath);
+        } catch (Exception e) {
+            log.warn("extractDuration: could not read duration for '{}', reason: {}", filePath, e.getMessage());
             return 0;
         }
     }
 
     private Path resolveStorageDirectory() {
-        Path dir = Paths.get(storagePath);
-        File storageDir = dir.toFile();
-        if (!storageDir.exists() && !storageDir.mkdirs()) {
-            throw new SongException(ErrorType.FILE_STORAGE_ERROR, "Could not create storage directory");
+        try {
+            Path dir = Paths.get(storagePath).toRealPath();
+            log.info("resolveStorageDirectory: using path '{}'", dir);
+            File storageDir = dir.toFile();
+            if (!storageDir.exists() && !storageDir.mkdirs()) {
+                throw new SongException(ErrorType.FILE_STORAGE_ERROR, "Could not create storage directory: " + dir);
+            }
+            return dir;
+        } catch (IOException e) {
+            throw new SongException(ErrorType.FILE_STORAGE_ERROR, "Could not resolve storage directory", e);
         }
-        return dir;
     }
 
-
-    private String resolveFileName(String originalFilename) {
-        String name = StringUtils.hasText(originalFilename) ? originalFilename : "untitled.mp3";
-        return StringUtils.cleanPath(name);
+    private String resolveFileName() {
+        return UUID.randomUUID().toString().replace("-", "") + ".mp3";
     }
 
 }
