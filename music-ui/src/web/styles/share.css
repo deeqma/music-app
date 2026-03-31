@@ -1,0 +1,91 @@
+.share-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--color-bg);
+  overflow: hidden;
+}
+
+.share-topbar {
+  height: 50px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(to bottom, var(--color-surface) 0%, transparent 100%);
+}
+
+.share-topbar__brand {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-accent);
+  letter-spacing: 0.02em;
+}
+
+.share-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-topbar__login-btn {
+  padding: 6px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  background-color: var(--color-accent);
+  color: var(--color-bg);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.share-topbar__login-btn:hover {
+  opacity: 0.85;
+}
+
+/* Scrollable content zone */
+.share-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Centered inner column */
+.share-content__body {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 32px 40px;
+}
+
+/* Constrain audio container to match content width */
+.share-audio-wrapper {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Override the horizontal margin so it fills the wrapper proportionally */
+.share-audio-wrapper .audio-container {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.share-page__not-found {
+  padding: 60px 32px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+.login-prompt-modal__body {
+  padding-bottom: 4px;
+}
+
+.login-prompt-modal__text {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}

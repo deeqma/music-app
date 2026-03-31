@@ -1,0 +1,113 @@
+.song-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.song-table thead tr {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.song-table th {
+  padding: 0 12px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+}
+
+/* Column widths + cell styling */
+.song-table__col-play     { width: 5%;  }
+.song-table__col-song     { width: 36%; text-align: left; }
+.song-table__col-liked    { width: 8%;  text-align: center; }
+
+.song-table__col-genre {
+  width: 25%;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.song-table__col-duration {
+  width: 26%;
+  text-align: right;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.song-table__row {
+  transition: background-color 0.15s;
+}
+
+.song-table__row:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.song-table__row--playing {
+  background-color: var(--color-accent-fade);
+}
+
+.song-table td {
+  padding: 9px 12px;
+  vertical-align: middle;
+}
+
+.song-table__play-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--color-surface-hover);
+  transition: background-color 0.15s;
+}
+
+.song-table__play-btn:hover {
+  background-color: var(--color-accent-fade);
+}
+
+.song-table__play-btn--playing {
+  background-color: var(--color-accent-fade);
+}
+
+.song-table__heart-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  margin: 0 auto;
+  transition: background-color 0.15s;
+}
+
+.song-table__heart-btn:hover {
+  background-color: var(--color-accent-fade);
+}
+
+.song-table__song-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.song-table__song-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song-table__artist-name {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
