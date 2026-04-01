@@ -6,6 +6,7 @@ import io.github.deeqma.music.dto.SongFilterDto;
 import io.github.deeqma.music.error.ErrorType;
 import io.github.deeqma.music.error.SongException;
 import io.github.deeqma.music.model.LikedSong;
+import io.github.deeqma.music.model.Playlist;
 import io.github.deeqma.music.model.Song;
 import io.github.deeqma.music.model.User;
 import io.github.deeqma.music.repository.LikedSongRepository;
@@ -192,6 +193,12 @@ public class SongService {
 
         Song song = findSongById(id);
         String filePath = song.getFilePath();
+
+        for (Playlist playlist : song.getPlaylists()) {
+            playlist.getSongs().remove(song);
+        }
+        song.getPlaylists().clear();
+
         songRepository.delete(song);
 
         try {
