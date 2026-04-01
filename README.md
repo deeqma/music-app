@@ -153,3 +153,15 @@ browser url `http://localhost:5173`
   * Vite 8
   * Zustand 5
   * ESLint
+
+
+# Music UI 
+
+* Dark mode (ember theme)
+
+![img_3.png](music-ui/img_3.png)
+
+
+* Dark mode (forest theme)
+
+![img_1.png](music-ui/img_1.png)
