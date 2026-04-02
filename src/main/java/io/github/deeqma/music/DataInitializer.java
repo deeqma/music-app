@@ -16,14 +16,18 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-@Component
 @Profile("!test")
+@Component
 public class DataInitializer implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
@@ -36,6 +40,9 @@ public class DataInitializer implements ApplicationRunner {
 
     @Value("${storage.mp3.path}")
     private String storagePath;
+
+    @Value("${songs.json.path:}")
+    private String songsJsonPath;
 
     public DataInitializer(SongRepository songRepository,
                            PlaylistRepository playlistRepository,
@@ -81,7 +88,12 @@ public class DataInitializer implements ApplicationRunner {
 
     private void loadSongs() {
         try {
-            InputStream inputStream = new ClassPathResource("songs.json").getInputStream();
+            InputStream inputStream = resolveSongsInputStream();
+            if (inputStream == null) {
+                log.info("DataInitializer: no songs.json found, skipping song loading");
+                return;
+            }
+
             List<SongData> songs = objectMapper.readValue(inputStream, new TypeReference<>() {});
 
             int added = 0;
@@ -110,6 +122,26 @@ public class DataInitializer implements ApplicationRunner {
         } catch (Exception e) {
             log.error("DataInitializer: failed to load songs", e);
         }
+    }
+
+    private InputStream resolveSongsInputStream() throws IOException {
+        if (StringUtils.hasText(songsJsonPath)) {
+            File externalFile = new File(songsJsonPath);
+            if (externalFile.exists()) {
+                log.info("DataInitializer: loading songs from external path '{}'", songsJsonPath);
+                return new FileInputStream(externalFile);
+            }
+            log.warn("DataInitializer: songs.json not found at '{}', skipping", songsJsonPath);
+            return null;
+        }
+
+        log.info("DataInitializer: loading songs from classpath");
+        ClassPathResource resource = new ClassPathResource("songs.json");
+        if (!resource.exists()) {
+            log.warn("DataInitializer: songs.json not found in classpath, skipping");
+            return null;
+        }
+        return resource.getInputStream();
     }
 
     private void loadPlaylists(User systemUser) {

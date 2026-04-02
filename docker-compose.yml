@@ -26,10 +26,12 @@ services:
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: pass
       STORAGE_MP3_PATH: /app/music/songs
+      SONGS_JSON_PATH: /app/music/data/songs.json
       JWT_SECRET: "kPxo1WznfjNQjTpbKCgj435rhgOI9TCkIuMhdZPBrPo="
       CORS_ALLOWED_ORIGINS: "http://localhost:5175"
     volumes:
       - ${HOME}/Music/musicapp/mp3:/app/music/songs
+      - ${HOME}/Music/musicapp/data:/app/music/data
     depends_on:
       - database
 
