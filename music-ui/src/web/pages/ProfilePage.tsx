@@ -4,8 +4,10 @@ import Icon from '../components/Icon'
 import profileRaw from '../assets/profile-circle.svg?raw'
 import copyRaw    from '../assets/copy.svg?raw'
 import logoutRaw  from '../assets/logout.svg?raw'
-import { clearToken, getTokenPayload } from '../../core/auth/authToken'
+import exportRaw  from '../assets/export.svg?raw'
+import { clearToken, getTokenPayload, isAdmin } from '../../core/auth/authToken'
 import { userApi } from '../../core/auth/userApi'
+import { songApi } from '../../core/auth/songApi'
 import type { UserProfileDto } from '../../core/auth/contracts'
 
 function formatStockholmTime(iso: string): string {
@@ -26,6 +28,8 @@ export default function ProfilePage() {
   const [profile,      setProfile]      = useState<UserProfileDto | null>(null)
   const [deleting,     setDeleting]     = useState(false)
   const [deleteError,  setDeleteError]  = useState('')
+  const [exporting,    setExporting]    = useState(false)
+  const [exportError,  setExportError]  = useState('')
   const copyTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null)
   const deleteErrTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -60,6 +64,20 @@ export default function ProfilePage() {
     setCopied(true)
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
     copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function handleExport() {
+    if (exporting) return
+    setExporting(true)
+    setExportError('')
+    try {
+      await songApi.export()
+    } catch (err) {
+      const e = err as { message?: string }
+      setExportError(e.message ?? 'Export failed')
+    } finally {
+      setExporting(false)
+    }
   }
 
   async function handleDeleteAccount() {
@@ -145,6 +163,21 @@ export default function ProfilePage() {
           <Icon src={logoutRaw} size={18} color="secondary" alt="logout" />
           <span>Log out</span>
         </button>
+
+        {/* Export — admin only */}
+        {isAdmin() && (
+          <div className="profile__card profile__card--row">
+            <div className="profile__card-text">
+              <span className="profile__card-title">Export Songs</span>
+              <span className="profile__card-sub">Download all songs as songs.json</span>
+            </div>
+            <button className="profile__export-btn" onClick={handleExport} disabled={exporting}>
+              <Icon src={exportRaw} size={18} color="secondary" alt="export" />
+              <span>{exporting ? 'Exporting…' : 'Export'}</span>
+            </button>
+            {exportError && <p className="profile__danger-error">{exportError}</p>}
+          </div>
+        )}
 
         {/* Danger zone */}
         <div className="profile__danger-zone">

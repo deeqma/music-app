@@ -79,6 +79,21 @@ export const songApi = {
     return http<void>(`/api/v1/songs/${id}`, { method: 'DELETE' })
   },
 
+  async export(): Promise<void> {
+    const token = getToken()
+    const res = await fetch(`${BASE_URL}/api/v1/songs/export`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    if (!res.ok) throw await res.json()
+    const blob = await res.blob()
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = 'songs.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  },
+
   streamUrl(id: number): string {
     return `${BASE_URL}/api/v1/songs/${id}/stream`
   },
