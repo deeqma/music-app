@@ -224,6 +224,13 @@ public class SongService {
         return dto;
     }
 
+    public List<SongDto> exportAllSongs() {
+        log.info("exportAllSongs: exporting all songs");
+        List<Song> songs = songRepository.findAll();
+        log.info("exportAllSongs: found {} songs", songs.size());
+        return songs.stream().map(this::toDto).toList();
+    }
+
     private void validateUpdate(Long id, CreateOrUpdateSongDto dto) {
         if (songRepository.existsBySongNameAndArtistNameAndIdNot(dto.getSongName(), dto.getArtistName(), id)) {
             throw new SongException(ErrorType.DUPLICATED_SONG, "Song with this name and artist already exists");

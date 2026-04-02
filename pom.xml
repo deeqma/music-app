@@ -11,7 +11,7 @@
 	<packaging>jar</packaging>
 	<groupId>io.github.deeqma</groupId>
 	<artifactId>music-app</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.2.0-SNAPSHOT</version>
 	<name>music-app</name>
 	<description>Music Application</description>
 	<properties>

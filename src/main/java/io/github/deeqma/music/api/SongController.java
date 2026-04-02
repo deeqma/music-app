@@ -160,4 +160,16 @@ public class SongController {
         return builder.body(region);
     }
 
+    @GetMapping("/export")
+    public ResponseEntity<List<SongDto>> exportAllSongs(@AuthenticationPrincipal Jwt jwt) {
+        Role role = extractRole(jwt);
+        if (role != Role.ADMIN) {
+            throw new UserException(ErrorType.UNAUTHORIZED, "Only admins can export songs");
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"songs.json\"")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(songService.exportAllSongs());
+    }
+
 }
