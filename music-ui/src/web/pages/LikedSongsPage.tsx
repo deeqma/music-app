@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext, useLocation } from 'react-router-dom'
 import type { SongDto } from '../../core/auth/contracts'
 import { songApi } from '../../core/auth/songApi'
 import { usePlayerStore } from '../../core/store/playerStore'
@@ -14,6 +14,10 @@ const PAGE_SIZE = 15
 
 export default function LikedSongsPage() {
   const { searchQuery } = useOutletContext<{ searchQuery: string }>()
+  const location = useLocation()
+  const scrollToSongIdRef = useRef<number | null>(
+    (location.state as { scrollToSongId?: number } | null)?.scrollToSongId ?? null
+  )
 
   const [allLoaded, setAllLoaded] = useState<SongDto[]>([])
   const [page,      setPage]      = useState(0)
@@ -67,7 +71,7 @@ export default function LikedSongsPage() {
         data = await songApi.getLiked({ ...f, page: p, pageSize: PAGE_SIZE })
       }
       mergeLikedSongs(data)
-      if (data.length < PAGE_SIZE) setHasMore(false)
+      if (data.length < PAGE_SIZE) { hasMoreRef.current = false; setHasMore(false) }
       setAllLoaded(prev => reset ? data : [...prev, ...data])
       setPage(p + 1)
     } catch {
@@ -96,6 +100,22 @@ export default function LikedSongsPage() {
     obs.observe(el)
     return () => obs.disconnect()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const id = scrollToSongIdRef.current
+    if (!id) return
+    if (songs.some(s => s.id === id)) {
+      requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>(`[data-song-id="${id}"]`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+      scrollToSongIdRef.current = null
+    } else if (hasMoreRef.current && !loadingRef.current) {
+      loadPage(pageRef.current, queryRef.current, filterRef.current)
+    } else {
+      scrollToSongIdRef.current = null
+    }
+  }, [songs]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const active = isFilterActive(filter)
 

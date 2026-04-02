@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import type { SongDto, PlaylistDetailsDto } from '../../core/auth/contracts'
 import { playlistApi } from '../../core/auth/playlistApi'
 import { usePlaylistsStore } from '../../core/store/playlistsStore'
@@ -28,8 +28,11 @@ function formatTotalDuration(seconds: number): string {
 
 export default function PlaylistPage() {
   const { name } = useParams<{ name: string }>()
-
   const navigate = useNavigate()
+  const location = useLocation()
+  const scrollToSongIdRef = useRef<number | null>(
+    (location.state as { scrollToSongId?: number } | null)?.scrollToSongId ?? null
+  )
 
   const { playlists, removePlaylist } = usePlaylistsStore()
   const summary = playlists.find(p => p.slug === name) ?? null
@@ -119,7 +122,7 @@ export default function PlaylistPage() {
         }
       }
       mergeLikedSongs(data)
-      if (data.length < PAGE_SIZE) setHasMore(false)
+      if (data.length < PAGE_SIZE) { hasMoreRef.current = false; setHasMore(false) }
       setSongs(prev => reset ? data : [...prev, ...data])
       setPage(p + 1)
     } catch {
@@ -199,6 +202,22 @@ export default function PlaylistPage() {
       setDeleting(false)
     }
   }
+
+  useEffect(() => {
+    const id = scrollToSongIdRef.current
+    if (!id) return
+    if (songs.some(s => s.id === id)) {
+      requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>(`[data-song-id="${id}"]`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+      scrollToSongIdRef.current = null
+    } else if (hasMoreRef.current && !loadingRef.current) {
+      loadPage(pageRef.current, queryRef.current, filterRef.current)
+    } else {
+      scrollToSongIdRef.current = null
+    }
+  }, [songs]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSongDeleted(id: number) {
     setSongs(prev => prev.filter(s => s.id !== id))

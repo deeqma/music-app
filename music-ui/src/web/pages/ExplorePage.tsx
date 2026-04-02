@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext, useLocation } from 'react-router-dom'
 import type { SongDto } from '../../core/auth/contracts'
 import { songApi } from '../../core/auth/songApi'
 import { usePlayerStore } from '../../core/store/playerStore'
@@ -14,6 +14,10 @@ const PAGE_SIZE = 15
 
 export default function ExplorePage() {
   const { searchQuery } = useOutletContext<{ searchQuery: string }>()
+  const location = useLocation()
+  const scrollToSongIdRef = useRef<number | null>(
+    (location.state as { scrollToSongId?: number } | null)?.scrollToSongId ?? null
+  )
 
   const [songs,   setSongs]   = useState<SongDto[]>([])
   const [page,    setPage]    = useState(0)
@@ -63,7 +67,7 @@ export default function ExplorePage() {
         ? await songApi.search(q, p, PAGE_SIZE)
         : await songApi.getAll({ ...f, page: p, pageSize: PAGE_SIZE })
       mergeLikedSongs(data)
-      if (data.length < PAGE_SIZE) setHasMore(false)
+      if (data.length < PAGE_SIZE) { hasMoreRef.current = false; setHasMore(false) }
       setSongs(prev => reset ? data : [...prev, ...data])
       setPage(p + 1)
     } catch {
@@ -94,6 +98,23 @@ export default function ExplorePage() {
     obs.observe(el)
     return () => obs.disconnect()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // After each page loads: if tracking a song, scroll to it or keep loading pages until found
+  useEffect(() => {
+    const id = scrollToSongIdRef.current
+    if (!id) return
+    if (songs.some(s => s.id === id)) {
+      requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>(`[data-song-id="${id}"]`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+      scrollToSongIdRef.current = null
+    } else if (hasMoreRef.current && !loadingRef.current) {
+      loadPage(pageRef.current, queryRef.current, filterRef.current)
+    } else {
+      scrollToSongIdRef.current = null
+    }
+  }, [songs]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSongDeleted(id: number) {
     setSongs(prev => prev.filter(s => s.id !== id))
